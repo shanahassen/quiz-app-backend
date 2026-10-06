@@ -3,7 +3,6 @@ package com.example.quiz_app.controller;
 import com.example.quiz_app.dto.AuthResponse;
 import com.example.quiz_app.dto.LoginRequest;
 import com.example.quiz_app.dto.RegisterRequest;
-import com.example.quiz_app.model.User;
 import com.example.quiz_app.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

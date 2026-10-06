@@ -8,7 +8,6 @@ import com.example.quiz_app.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-
 import java.util.Arrays;
 import java.util.List;
 
@@ -65,12 +64,10 @@ public class DataInitializer implements CommandLineRunner {
                 RoleName.SUPER_ADMIN,
                 "Super Admin role"
         );
-
         createRole(
                 RoleName.ADMIN,
                 "Admin role"
         );
-
         createRole(
                 RoleName.PARTICIPANT,
                 "Participant role"
@@ -105,7 +102,6 @@ public class DataInitializer implements CommandLineRunner {
                     "MANAGE_REPORT",
                     "VIEW_AUDIT_LOG"
             );
-
         } else if (roleName == RoleName.ADMIN) {
 
             permissionNames = Arrays.asList(
@@ -114,7 +110,6 @@ public class DataInitializer implements CommandLineRunner {
                     "MANAGE_QUESTION",
                     "MANAGE_ANSWER_OPTION"
             );
-
         } else {
 
             permissionNames = Arrays.asList(
@@ -122,12 +117,11 @@ public class DataInitializer implements CommandLineRunner {
                     "MANAGE_PROFILE"
             );
         }
-
         return permissionRepository.findAll()
                 .stream()
                 .filter(permission ->
                         permissionNames.contains(permission.getName()))
-                .map(Permission::getPermissionId)
+                .map(Permission::getRefId)
                 .toList();
     }
 }

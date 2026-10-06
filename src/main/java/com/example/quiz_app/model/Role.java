@@ -11,7 +11,7 @@ import java.util.List;
 public class Role {
 
     @Id
-    private String roleId;
+    private String refId;
 
     private RoleName roleName;
     private String description;
