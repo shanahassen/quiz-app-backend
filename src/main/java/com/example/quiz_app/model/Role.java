@@ -8,10 +8,7 @@ import java.util.List;
 
 @Data
 @Document(collection = "roles")
-public class Role {
-
-    @Id
-    private String refId;
+public class Role extends BaseEntity{
 
     private RoleName roleName;
     private String description;

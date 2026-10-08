@@ -16,7 +16,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -33,7 +32,7 @@ public class AuthService {
 
         log.info("Registration attempt for email: {}", request.email());
 
-        if (userRepository.findByEmailAndUserStatus(request.email(), UserStatus.ACTIVE).isPresent()) {
+        if (userRepository.findByEmailAndStatus(request.email(), UserStatus.ACTIVE).isPresent()) {
             throw new RuntimeException("Email already registered");
         }
 
@@ -45,14 +44,9 @@ public class AuthService {
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setEmail(request.email());
-
         user.setPassword(passwordEncoder.encode(request.password()));
-
-        user.setUserStatus(UserStatus.ACTIVE);
+        user.setStatus(UserStatus.ACTIVE);
         user.setRoleId(participantRole.getRefId());
-
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
 
         log.info("User registered successfully: {}", user.getEmail());
 
@@ -74,7 +68,7 @@ public class AuthService {
         log.info("Authentication successful for email: {}", request.email());
 
         String email = authentication.getName();
-        User user = userRepository.findByEmailAndUserStatus(email, UserStatus.ACTIVE)
+        User user = userRepository.findByEmailAndStatus(email, UserStatus.ACTIVE)
                 .orElseThrow(() ->
                         new RuntimeException("User not found"));
         Role role = roleRepository.findById(user.getRoleId())
