@@ -31,7 +31,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         log.debug("Loading user details for: {}", email);
 
-        User user = userRepository.findByEmailAndUserStatus(email, UserStatus.ACTIVE )
+        User user = userRepository.findByEmailAndStatus(email, UserStatus.ACTIVE )
                 .orElseThrow(() ->
                         new UsernameNotFoundException(
                                 "User not found: " + email));
@@ -72,7 +72,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .withUsername(user.getEmail())
                 .password(user.getPassword())
                 .authorities(authorities)
-                .disabled(user.getUserStatus().name().equals("INACTIVE"))
+                .disabled(user.getStatus().name().equals("INACTIVE"))
                 .build();
     }
 }

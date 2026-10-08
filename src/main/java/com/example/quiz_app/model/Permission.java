@@ -6,10 +6,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
 @Document(collection = "permissions")
-public class Permission {
-
-    @Id
-    private String refId;
+public class Permission extends BaseEntity{
 
     private String name;
     private String description;
