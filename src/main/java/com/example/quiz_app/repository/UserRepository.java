@@ -8,5 +8,12 @@ import java.util.Optional;
 
 public interface UserRepository extends MongoRepository<User, String> {
 
+<<<<<<< Updated upstream
     Optional<User> findByEmailAndStatus(String email, UserStatus status);
 }
+=======
+    Optional<User> findByEmail(String email);
+
+    Optional<User> findByEmailAndUserStatus(String email, UserStatus status);
+}
+>>>>>>> Stashed changes
