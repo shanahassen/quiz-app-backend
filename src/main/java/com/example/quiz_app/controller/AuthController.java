@@ -4,8 +4,13 @@ import com.example.quiz_app.dto.AuthResponse;
 import com.example.quiz_app.dto.LoginRequest;
 import com.example.quiz_app.dto.RegisterRequest;
 import com.example.quiz_app.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -15,9 +20,10 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public String register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest request) {
         authService.register(request);
-        return "Registration successful";
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(Map.of("message", "Registration successful"));
     }
 
     @PostMapping("/login")

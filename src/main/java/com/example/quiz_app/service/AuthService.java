@@ -11,11 +11,18 @@ import com.example.quiz_app.repository.RoleRepository;
 import com.example.quiz_app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+<<<<<<< Updated upstream
+=======
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
+>>>>>>> Stashed changes
 
 @Slf4j
 @Service
@@ -30,50 +37,87 @@ public class AuthService {
 
     public User register(RegisterRequest request) {
 
-        log.info("Registration attempt for email: {}", request.email());
+        String email = request.email().trim().toLowerCase();
 
+        log.info("Registration attempt for email: {}", email);
+
+<<<<<<< Updated upstream
         if (userRepository.findByEmailAndStatus(request.email(), UserStatus.ACTIVE).isPresent()) {
             throw new RuntimeException("Email already registered");
+=======
+        // confirmPassword is only checked here, never stored
+        if (!request.password().equals(request.confirmPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match");
+>>>>>>> Stashed changes
+        }
+
+        // any status counts as already registered
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This email is already registered");
         }
 
         Role participantRole = roleRepository.findByRoleName(RoleName.PARTICIPANT)
-                .orElseThrow(() -> new RuntimeException("Participant role not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR, "Participant role not found"));
 
-        User user = new User();
-
+<<<<<<< Updated upstream
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setEmail(request.email());
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setStatus(UserStatus.ACTIVE);
+=======
+        LocalDateTime now = LocalDateTime.now();
+
+        User user = new User();
+        user.setFirstName(request.firstName().trim());
+        user.setLastName(request.lastName().trim());
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setUserStatus(UserStatus.ACTIVE);
+>>>>>>> Stashed changes
         user.setRoleId(participantRole.getRefId());
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
 
+<<<<<<< Updated upstream
         log.info("User registered successfully: {}", user.getEmail());
+=======
+        User saved = userRepository.save(user);
 
-        return userRepository.save(user);
+        log.info("User registered successfully: {}", saved.getEmail());
+>>>>>>> Stashed changes
+
+        return saved;
     }
 
     public AuthResponse login(LoginRequest request) {
 
-        log.info("Login attempt for email: {}", request.email());
+        String requestEmail = request.email().trim().toLowerCase();
+
+        log.info("Login attempt for email: {}", requestEmail);
 
         Authentication authentication =
                 authenticationManager.authenticate(
                         new UsernamePasswordAuthenticationToken(
-                                request.email(),
+                                requestEmail,
                                 request.password()
                         )
                 );
 
-        log.info("Authentication successful for email: {}", request.email());
+        log.info("Authentication successful for email: {}", requestEmail);
 
         String email = authentication.getName();
+<<<<<<< Updated upstream
         User user = userRepository.findByEmailAndStatus(email, UserStatus.ACTIVE)
                 .orElseThrow(() ->
                         new RuntimeException("User not found"));
+=======
+        User user = userRepository.findByEmailAndUserStatus(email, UserStatus.ACTIVE)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+>>>>>>> Stashed changes
         Role role = roleRepository.findById(user.getRoleId())
-                .orElseThrow(() ->
-                        new RuntimeException("Role not found"));
+                .orElseThrow(() -> new RuntimeException("Role not found"));
 
         log.info("User {} logged in with role {}", user.getEmail(), role.getRoleName());
 
