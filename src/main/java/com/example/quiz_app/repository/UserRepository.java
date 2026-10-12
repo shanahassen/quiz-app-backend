@@ -1,7 +1,7 @@
 package com.example.quiz_app.repository;
 
-import com.example.quiz_app.model.User;
 import com.example.quiz_app.model.Status;
+import com.example.quiz_app.model.User;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.Optional;
