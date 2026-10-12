@@ -1,7 +1,7 @@
 package com.example.quiz_app.config;
 
 import com.example.quiz_app.model.User;
-import com.example.quiz_app.model.UserStatus;
+import com.example.quiz_app.model.Status;
 import com.example.quiz_app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.AuditorAware;
@@ -29,7 +29,7 @@ public class AuditorAwareConfig implements AuditorAware<String> {
 
         String email = authentication.getName();
 
-        return userRepository.findByEmailAndStatus(email, UserStatus.ACTIVE)
+        return userRepository.findByEmailAndStatus(email, Status.ACTIVE)
                 .map(User::getRefId);
     }
 }

@@ -1,6 +1,6 @@
 package com.example.quiz_app.model;
 
-public enum UserStatus {
+public enum Status {
     ACTIVE,
     INACTIVE
 }
