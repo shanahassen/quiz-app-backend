@@ -2,7 +2,7 @@ package com.example.quiz_app.service;
 
 import com.example.quiz_app.model.Role;
 import com.example.quiz_app.model.User;
-import com.example.quiz_app.model.UserStatus;
+import com.example.quiz_app.model.Status;
 import com.example.quiz_app.repository.PermissionRepository;
 import com.example.quiz_app.repository.RoleRepository;
 import com.example.quiz_app.repository.UserRepository;
@@ -31,7 +31,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         log.debug("Loading user details for: {}", email);
 
-        User user = userRepository.findByEmailAndStatus(email, UserStatus.ACTIVE )
+        User user = userRepository.findByEmailIgnoreCaseAndStatus(email.trim(), Status.ACTIVE )
                 .orElseThrow(() ->
                         new UsernameNotFoundException(
                                 "User not found: " + email));
@@ -57,7 +57,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
             for (String permissionId : role.getPermissionIds()) {
 
-                permissionRepository.findById(permissionId)
+                permissionRepository.findByRefId(permissionId)
                         .ifPresent(permission ->
                                 authorities.add(
                                         new SimpleGrantedAuthority(
