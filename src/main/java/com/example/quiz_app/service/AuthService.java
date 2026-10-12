@@ -1,28 +1,28 @@
 package com.example.quiz_app.service;
 
+import com.example.quiz_app.common.QuizException;
+import com.example.quiz_app.common.StatusCode;
 import com.example.quiz_app.dto.AuthResponse;
 import com.example.quiz_app.dto.LoginRequest;
 import com.example.quiz_app.dto.RegisterRequest;
 import com.example.quiz_app.model.Role;
 import com.example.quiz_app.model.RoleName;
+import com.example.quiz_app.model.Status;
 import com.example.quiz_app.model.User;
-import com.example.quiz_app.model.UserStatus;
 import com.example.quiz_app.repository.RoleRepository;
 import com.example.quiz_app.repository.UserRepository;
+import com.example.quiz_app.util.ValidationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-<<<<<<< Updated upstream
-=======
-import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
->>>>>>> Stashed changes
+import java.util.Locale;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -35,93 +35,62 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
-    public User register(RegisterRequest request) {
+    public User register(RegisterRequest request) throws QuizException {
+        ValidationUtil.validateRegistration(request);
 
-        String email = request.email().trim().toLowerCase();
-
-        log.info("Registration attempt for email: {}", email);
-
-<<<<<<< Updated upstream
-        if (userRepository.findByEmailAndStatus(request.email(), UserStatus.ACTIVE).isPresent()) {
-            throw new RuntimeException("Email already registered");
-=======
-        // confirmPassword is only checked here, never stored
         if (!request.password().equals(request.confirmPassword())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passwords do not match");
->>>>>>> Stashed changes
+            throw new QuizException(StatusCode.E7001, "Passwords do not match");
         }
 
-        // any status counts as already registered
-        if (userRepository.findByEmail(email).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "This email is already registered");
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+        log.info("Registration attempt for email: {}", email);
+
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new QuizException(StatusCode.E4009, "Email already registered");
         }
 
         Role participantRole = roleRepository.findByRoleName(RoleName.PARTICIPANT)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR, "Participant role not found"));
-
-<<<<<<< Updated upstream
-        user.setFirstName(request.firstName());
-        user.setLastName(request.lastName());
-        user.setEmail(request.email());
-        user.setPassword(passwordEncoder.encode(request.password()));
-        user.setStatus(UserStatus.ACTIVE);
-=======
-        LocalDateTime now = LocalDateTime.now();
+                .orElseThrow(() -> new QuizException(
+                        StatusCode.E5000, "Participant role is not configured"));
 
         User user = new User();
+        user.setRefId(UUID.randomUUID().toString());
         user.setFirstName(request.firstName().trim());
         user.setLastName(request.lastName().trim());
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(request.password()));
-        user.setUserStatus(UserStatus.ACTIVE);
->>>>>>> Stashed changes
-        user.setRoleId(participantRole.getRefId());
-        user.setCreatedAt(now);
-        user.setUpdatedAt(now);
+        user.setStatus(Status.ACTIVE);
+        user.setRoleId(participantRole.getId());
 
-<<<<<<< Updated upstream
-        log.info("User registered successfully: {}", user.getEmail());
-=======
         User saved = userRepository.save(user);
-
         log.info("User registered successfully: {}", saved.getEmail());
->>>>>>> Stashed changes
-
         return saved;
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request) throws QuizException {
+        ValidationUtil.validateLogin(request);
 
-        String requestEmail = request.email().trim().toLowerCase();
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+        log.info("Login attempt for email: {}", email);
 
-        log.info("Login attempt for email: {}", requestEmail);
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, request.password()));
+        } catch (AuthenticationException exception) {
+            throw new QuizException(StatusCode.E4001, "Invalid email or password", exception);
+        }
 
-        Authentication authentication =
-                authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(
-                                requestEmail,
-                                request.password()
-                        )
-                );
+        log.info("Authentication successful for email: {}", email);
 
-        log.info("Authentication successful for email: {}", requestEmail);
-
-        String email = authentication.getName();
-<<<<<<< Updated upstream
-        User user = userRepository.findByEmailAndStatus(email, UserStatus.ACTIVE)
-                .orElseThrow(() ->
-                        new RuntimeException("User not found"));
-=======
-        User user = userRepository.findByEmailAndUserStatus(email, UserStatus.ACTIVE)
-                .orElseThrow(() -> new RuntimeException("User not found"));
->>>>>>> Stashed changes
+        User user = userRepository.findByEmailIgnoreCaseAndStatus(
+                        authentication.getName(), Status.ACTIVE)
+                .orElseThrow(() -> new QuizException(StatusCode.E4004, "User not found"));
         Role role = roleRepository.findById(user.getRoleId())
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new QuizException(StatusCode.E5000, "User role is not configured"));
 
         log.info("User {} logged in with role {}", user.getEmail(), role.getRoleName());
-
-        String token = jwtService.generateToken(email);
+        String token = jwtService.generateToken(authentication.getName());
 
         return new AuthResponse(
                 token,
@@ -129,7 +98,19 @@ public class AuthService {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getEmail(),
-                role.getRoleName().name()
-        );
+                role.getRoleName().name());
+    }
+
+    public void assignAdminRole(String userRefId) throws QuizException {
+        User user = userRepository.findByRefId(userRefId)
+                .orElseThrow(() -> new QuizException(StatusCode.E4004, "User not found"));
+        if (user.getStatus() != Status.ACTIVE) {
+            throw new QuizException(StatusCode.E4004, "Inactive users cannot be assigned the admin role");
+        }
+
+        Role adminRole = roleRepository.findByRoleName(RoleName.ADMIN)
+                .orElseThrow(() -> new QuizException(StatusCode.E5000, "Admin role is not configured"));
+        user.setRoleId(adminRole.getId());
+        userRepository.save(user);
     }
 }

@@ -24,5 +24,4 @@ public enum StatusCode {
     E4006("Not Acceptable");
 
     private final String message;
-
 }

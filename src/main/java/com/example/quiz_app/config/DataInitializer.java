@@ -5,11 +5,14 @@ import com.example.quiz_app.model.Role;
 import com.example.quiz_app.model.RoleName;
 import com.example.quiz_app.repository.PermissionRepository;
 import com.example.quiz_app.repository.RoleRepository;
+import com.example.quiz_app.repository.UserRepository;
+import com.example.quiz_app.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -17,12 +20,23 @@ public class DataInitializer implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
+    private final UserRepository userRepository;
 
     @Override
     public void run(String... args) {
 
         createPermissions();
         createRoles();
+        backfillUserReferenceIds();
+    }
+
+    private void backfillUserReferenceIds() {
+        for (User user : userRepository.findAll()) {
+            if (user.getRefId() == null || user.getRefId().isBlank()) {
+                user.setRefId(UUID.randomUUID().toString());
+                userRepository.save(user);
+            }
+        }
     }
 
     private void createPermissions() {
@@ -41,21 +55,21 @@ public class DataInitializer implements CommandLineRunner {
 
     private void createPermission(String name, String description) {
 
-        boolean exists = permissionRepository
+        Permission permission = permissionRepository
                 .findAll()
                 .stream()
-                .anyMatch(permission ->
-                        permission.getName().equals(name));
+                .filter(existing -> existing.getName().equals(name))
+                .findFirst()
+                .orElseGet(Permission::new);
 
-        if (!exists) {
-
-            Permission permission = new Permission();
-
-            permission.setName(name);
-            permission.setDescription(description);
-
-            permissionRepository.save(permission);
+        if (permission.getRefId() == null) {
+            permission.setRefId(UUID.randomUUID().toString());
         }
+
+        permission.setName(name);
+        permission.setDescription(description);
+
+        permissionRepository.save(permission);
     }
 
     private void createRoles() {
@@ -78,6 +92,10 @@ public class DataInitializer implements CommandLineRunner {
 
         Role role = roleRepository.findByRoleName(roleName)
                 .orElseGet(Role::new);
+
+        if (role.getRefId() == null) {
+            role.setRefId(UUID.randomUUID().toString());
+        }
 
         role.setRoleName(roleName);
         role.setDescription(description);
