@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 public abstract class BaseEntity {
 
     @Id
-    private String refId;
+    private String id;
 
     @CreatedDate
     private LocalDateTime createdAt;
