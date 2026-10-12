@@ -4,6 +4,7 @@ import com.example.quiz_app.dto.AuthResponse;
 import com.example.quiz_app.dto.LoginRequest;
 import com.example.quiz_app.dto.RegisterRequest;
 import com.example.quiz_app.service.AuthService;
+import com.example.quiz_app.common.QuizException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,13 +16,13 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public String register(@RequestBody RegisterRequest request) {
+    public String register(@RequestBody(required = false) RegisterRequest request) throws QuizException {
         authService.register(request);
         return "Registration successful";
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody LoginRequest request) {
+    public AuthResponse login(@RequestBody(required = false) LoginRequest request) throws QuizException {
         return authService.login(request);
     }
 }

@@ -33,6 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
+        log.info("Authorization header present: {}", authHeader != null);
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
@@ -67,12 +68,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     SecurityContextHolder.getContext()
                             .setAuthentication(authentication);
+                    log.info(
+                            "Authorities for {}: {}",
+                            email,
+                            userDetails.getAuthorities()
+                    );
                 }
             }
 
         } catch (JwtException | IllegalArgumentException exception) {
             log.warn("Invalid JWT token received");
         }
+
+        log.info(
+                "Request: {} {}, authenticated: {}",
+                request.getMethod(),
+                request.getRequestURI(),
+                SecurityContextHolder.getContext().getAuthentication() != null
+        );
 
         filterChain.doFilter(request, response);
     }

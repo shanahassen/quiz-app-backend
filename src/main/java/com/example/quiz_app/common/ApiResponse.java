@@ -5,9 +5,7 @@ import lombok.Data;
 import lombok.NonNull;
 import tools.jackson.databind.annotation.JsonSerialize;
 import tools.jackson.databind.ext.javatime.ser.LocalDateTimeSerializer;
-
 import java.time.LocalDateTime;
-import java.util.Map;
 
 @Data
 public class ApiResponse {
@@ -45,5 +43,4 @@ public class ApiResponse {
         this.totalElements = totalElements;
         return this;
     }
-
 }
