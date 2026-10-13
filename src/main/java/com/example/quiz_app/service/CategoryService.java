@@ -47,8 +47,7 @@ public class CategoryService {
     }
 
     public List<CategoryResponse> getAllCategories() {
-
-        return categoryRepository.findByStatus(Status.ACTIVE)
+        return categoryRepository.findAll()
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -64,7 +63,6 @@ public class CategoryService {
                                 "Category not found"
                         )
                 );
-
         return toResponse(category);
     }
 
@@ -99,7 +97,6 @@ public class CategoryService {
         category.setDescription(request.description());
 
         Category updatedCategory = categoryRepository.save(category);
-
         return toResponse(updatedCategory);
     }
 
@@ -122,7 +119,28 @@ public class CategoryService {
         }
 
         category.setStatus(Status.INACTIVE);
+        categoryRepository.save(category);
+    }
 
+    public void reactivateCategory(String refId)
+            throws QuizException {
+
+        Category category = categoryRepository.findByRefId(refId)
+                .orElseThrow(() ->
+                        new QuizException(
+                                StatusCode.E4004,
+                                "Category not found"
+                        )
+                );
+
+        if (category.getStatus() == Status.ACTIVE) {
+            throw new QuizException(
+                    StatusCode.E4004,
+                    "Category is already active"
+            );
+        }
+
+        category.setStatus(Status.ACTIVE);
         categoryRepository.save(category);
     }
 

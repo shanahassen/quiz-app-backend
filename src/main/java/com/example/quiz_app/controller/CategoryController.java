@@ -95,4 +95,19 @@ public class CategoryController {
                         .withMessage("Category deactivated successfully")
         );
     }
+    
+    @PutMapping("/{refId}/reactivate")
+    public ResponseEntity<ApiResponse> reactivateCategory(
+            @PathVariable String refId
+    ) throws QuizException {
+
+        categoryService.reactivateCategory(refId);
+
+        return ResponseEntity.ok(
+                ApiResponse
+                        .forStatus(StatusCode.S0000)
+                        .withMessage("Category reactivated successfully")
+        );
+    }
+
 }
