@@ -63,7 +63,6 @@ public class CategoryService {
                                 "Category not found"
                         )
                 );
-
         return toResponse(category);
     }
 
@@ -98,7 +97,6 @@ public class CategoryService {
         category.setDescription(request.description());
 
         Category updatedCategory = categoryRepository.save(category);
-
         return toResponse(updatedCategory);
     }
 
@@ -121,7 +119,6 @@ public class CategoryService {
         }
 
         category.setStatus(Status.INACTIVE);
-
         categoryRepository.save(category);
     }
 
@@ -146,7 +143,6 @@ public class CategoryService {
         category.setStatus(Status.ACTIVE);
         categoryRepository.save(category);
     }
-
 
     private CategoryResponse toResponse(Category category) {
 
