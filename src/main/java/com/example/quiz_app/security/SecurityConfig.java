@@ -3,6 +3,7 @@ package com.example.quiz_app.security;
 import com.example.quiz_app.filter.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -63,7 +64,16 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/roles/**").hasAuthority("MANAGE_ROLE")
 
                         // Quiz management
+                        // Authenticated users may read categories
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/categories",
+                                "/api/categories/**"
+                        ).authenticated()
+
+                        // Only category managers may create, update, or deactivate categories
                         .requestMatchers("/api/categories/**").hasAuthority("MANAGE_CATEGORY")
+                        .requestMatchers("/api/participant/quizzes/**").hasAuthority("TAKE_QUIZ")
                         .requestMatchers("/api/quizzes/**").hasAuthority("MANAGE_QUIZ")
                         .requestMatchers("/api/questions/**").hasAuthority("MANAGE_QUESTION")
                         .requestMatchers("/api/answer-options/**").hasAuthority("MANAGE_ANSWER_OPTION")
@@ -90,7 +100,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:4200"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
