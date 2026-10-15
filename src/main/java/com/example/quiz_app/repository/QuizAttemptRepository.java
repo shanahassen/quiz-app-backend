@@ -1,8 +1,8 @@
 package com.example.quiz_app.repository;
 
 import com.example.quiz_app.model.QuizAttempt;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.MongoRepository;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -23,5 +23,10 @@ public interface QuizAttemptRepository
     List<QuizAttempt> findByParticipantRefIdAndQuizRefId(
             String participantRefId,
             String quizRefId
+    );
+
+    List<QuizAttempt> findByParticipantRefId(
+            String participantRefId,
+            Sort sort
     );
 }
