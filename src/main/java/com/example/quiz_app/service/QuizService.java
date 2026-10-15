@@ -9,6 +9,7 @@ import com.example.quiz_app.model.Quiz;
 import com.example.quiz_app.model.QuizStatus;
 import com.example.quiz_app.model.Status;
 import com.example.quiz_app.repository.CategoryRepository;
+import com.example.quiz_app.repository.QuizAttemptRepository;
 import com.example.quiz_app.repository.QuizRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class QuizService {
 
+    private final QuizAttemptRepository quizAttemptRepository;
     private final QuizRepository quizRepository;
     private final CategoryRepository categoryRepository;
 
@@ -90,6 +92,83 @@ public class QuizService {
         return quizRepository.save(quiz);
     }
 
+
+    public Quiz updateQuiz(String refId, QuizRequest request)
+            throws QuizException {
+        validateRequest(request);
+
+        Quiz quiz = getQuizByRefId(refId);
+
+        if (quiz.getStatus() != QuizStatus.DRAFT
+                && quiz.getStatus() != QuizStatus.UNPUBLISHED) {
+            throw new QuizException(StatusCode.E7001,
+                    "Only draft or unpublished quizzes can be updated.");
+        }
+
+        if (quizAttemptRepository.existsByQuizRefId(refId)) {
+            throw new QuizException(StatusCode.E7001,
+                    "A quiz cannot be updated after an attempt has been started.");
+        }
+
+        String categoryRefId = request.categoryRefId().trim();
+        String title = request.title().trim();
+
+        Category category = categoryRepository.findByRefId(categoryRefId)
+                .orElseThrow(() ->
+                        new QuizException(StatusCode.E4004,
+                                "Category not found."));
+
+        if (category.getStatus() != Status.ACTIVE) {
+            throw new QuizException(StatusCode.E7001,
+                    "Quiz must belong to an active category.");
+        }
+
+        if (quizRepository
+                .existsByTitleIgnoreCaseAndCategoryRefIdAndStatusNotAndRefIdNot(
+                        title, categoryRefId, QuizStatus.ARCHIVED, refId)) {
+            throw new QuizException(StatusCode.E4009,
+                    "A quiz with this title already exists in this category.");
+        }
+
+        quiz.setCategoryRefId(categoryRefId);
+        quiz.setTitle(title);
+        quiz.setDescription(
+                request.description() == null
+                        ? ""
+                        : request.description().trim()
+        );
+
+        List<Quiz.Question> questions = new ArrayList<>();
+
+        for (QuizRequest.QuestionRequest questionRequest : request.questions()) {
+            Quiz.Question question = new Quiz.Question();
+            question.setRefId(UUID.randomUUID().toString());
+            question.setText(questionRequest.text().trim());
+            question.setHint(
+                    questionRequest.hint() == null
+                            ? ""
+                            : questionRequest.hint().trim()
+            );
+
+            List<Quiz.AnswerOption> options = new ArrayList<>();
+
+            for (QuizRequest.AnswerOptionRequest optionRequest
+                    : questionRequest.options()) {
+                Quiz.AnswerOption option = new Quiz.AnswerOption();
+                option.setRefId(UUID.randomUUID().toString());
+                option.setText(optionRequest.text().trim());
+                option.setCorrect(optionRequest.correct());
+                options.add(option);
+            }
+
+            question.setOptions(options);
+            questions.add(question);
+        }
+
+        quiz.setQuestions(questions);
+
+        return quizRepository.save(quiz);
+    }
 
     public List<Quiz> getAllQuizzes() {
         return quizRepository.findAll();

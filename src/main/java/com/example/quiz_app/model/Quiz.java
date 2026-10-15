@@ -4,6 +4,7 @@ import lombok.Data;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -16,15 +17,16 @@ public class Quiz extends BaseEntity {
     private String categoryRefId;
     private String title;
     private String description;
-    private QuizStatus status;
-    private List<Question> questions;
+    private QuizStatus status = QuizStatus.DRAFT;
+
+    private List<Question> questions = new ArrayList<>();
 
     @Data
     public static class Question {
         private String refId;
         private String text;
         private String hint;
-        private List<AnswerOption> options;
+        private List<AnswerOption> options = new ArrayList<>();
     }
 
     @Data

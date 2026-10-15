@@ -11,6 +11,8 @@ public interface QuizAttemptRepository
 
     Optional<QuizAttempt> findByRefId(String refId);
 
+    boolean existsByQuizRefId(String quizRefId);
+
     Optional<QuizAttempt> findByRefIdAndParticipantRefId(
             String refId,
             String participantRefId
