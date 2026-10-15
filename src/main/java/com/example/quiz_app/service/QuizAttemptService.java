@@ -27,6 +27,7 @@ public class QuizAttemptService {
     private final QuizAttemptRepository attemptRepository;
     private final QuizRepository quizRepository;
     private final UserRepository userRepository;
+    private final CertificateService certificateService;
 
     public QuizAttemptResponse startAttempt(
             String authenticatedEmail,
@@ -171,7 +172,13 @@ public class QuizAttemptService {
         attempt.setStatus(QuizAttemptStatus.SUBMITTED);
         attempt.setSubmittedAt(LocalDateTime.now());
 
-        return toResponse(attemptRepository.save(attempt));
+        QuizAttempt savedAttempt = attemptRepository.save(attempt);
+
+        // Generate a certificate for every submitted attempt.
+        certificateService.createForSubmittedAttempt(
+                savedAttempt, quiz, participant);
+
+        return toResponse(savedAttempt);
     }
 
     public QuizAttemptResponse getAttempt(
