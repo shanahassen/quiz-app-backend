@@ -105,10 +105,9 @@ public class QuizService {
     public Quiz publishQuiz(String refId) throws QuizException {
         Quiz quiz = getQuizByRefId(refId);
 
-        if (quiz.getStatus() != QuizStatus.DRAFT
-                && quiz.getStatus() != QuizStatus.UNPUBLISHED) {
+        if (quiz.getStatus() != QuizStatus.DRAFT) {
             throw new QuizException(StatusCode.E7001,
-                    "Only draft or unpublished quizzes can be published.");
+                    "Only draft quizzes can be published.");
         }
 
         Category category = categoryRepository.findByRefId(
@@ -126,15 +125,19 @@ public class QuizService {
         return quizRepository.save(quiz);
     }
 
-    public Quiz unpublishQuiz(String refId) throws QuizException {
+    /**
+     * Move a published or archived quiz directly to DRAFT.
+     */
+    public Quiz moveQuizToDraft(String refId) throws QuizException {
         Quiz quiz = getQuizByRefId(refId);
 
-        if (quiz.getStatus() != QuizStatus.PUBLISHED) {
+        if (quiz.getStatus() != QuizStatus.PUBLISHED
+                && quiz.getStatus() != QuizStatus.ARCHIVED) {
             throw new QuizException(StatusCode.E7001,
-                    "Only published quizzes can be unpublished.");
+                    "Only published or archived quizzes can be moved to drafts.");
         }
 
-        quiz.setStatus(QuizStatus.UNPUBLISHED);
+        quiz.setStatus(QuizStatus.DRAFT);
         return quizRepository.save(quiz);
     }
 

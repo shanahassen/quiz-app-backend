@@ -70,15 +70,15 @@ public class AdminQuizController {
         );
     }
 
-    @PatchMapping("/{refId}/unpublish")
-    public ResponseEntity<ApiResponse> unpublishQuiz(
+    @PatchMapping("/{refId}/draft")
+    public ResponseEntity<ApiResponse> moveQuizToDraft(
             @PathVariable String refId
     ) throws QuizException {
-        Quiz quiz = quizService.unpublishQuiz(refId);
+        Quiz quiz = quizService.moveQuizToDraft(refId);
 
         return ResponseEntity.ok(
                 ApiResponse.forStatus(StatusCode.S0000)
-                        .withMessage("Quiz unpublished successfully")
+                        .withMessage("Quiz moved to drafts successfully")
                         .withPayload(quiz)
         );
     }
