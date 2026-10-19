@@ -26,4 +26,11 @@ public interface QuizRepository extends MongoRepository<Quiz, String> {
             String categoryRefId,
             QuizStatus status
     );
+
+    boolean existsByTitleIgnoreCaseAndCategoryRefIdAndStatusNotAndRefIdNot(
+            String title,
+            String categoryRefId,
+            QuizStatus status,
+            String refId
+    );
 }

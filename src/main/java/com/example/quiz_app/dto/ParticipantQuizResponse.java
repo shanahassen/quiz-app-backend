@@ -15,6 +15,7 @@ public record ParticipantQuizResponse(
     public record QuestionResponse(
             String refId,
             String text,
+            boolean hasHint,
             List<OptionResponse> options
     ) {}
 

@@ -43,12 +43,12 @@ public class QuizAttemptController {
             Authentication authentication
     ) throws QuizException {
 
-        AnswerSubmissionResponse result = attemptService.submitAnswer(
+        AnswerFeedbackResponse feedback = attemptService.submitAnswer(
                 authentication.getName(), attemptRefId, request);
 
         ApiResponse response = ApiResponse.forStatus(StatusCode.S0000)
                 .withMessage("Answer submitted successfully.")
-                .withPayload(result);
+                .withPayload(feedback);
 
         return ResponseEntity.ok(response);
     }

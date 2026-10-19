@@ -57,6 +57,20 @@ public class AdminQuizController {
         );
     }
 
+    @PutMapping("/{refId}")
+    public ResponseEntity<ApiResponse> updateQuiz(
+            @PathVariable String refId,
+            @RequestBody(required = false) QuizRequest request
+    ) throws QuizException {
+        Quiz quiz = quizService.updateQuiz(refId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.forStatus(StatusCode.S0000)
+                        .withMessage("Quiz updated successfully")
+                        .withPayload(quiz)
+        );
+    }
+
     @PatchMapping("/{refId}/publish")
     public ResponseEntity<ApiResponse> publishQuiz(
             @PathVariable String refId
@@ -78,7 +92,7 @@ public class AdminQuizController {
 
         return ResponseEntity.ok(
                 ApiResponse.forStatus(StatusCode.S0000)
-                        .withMessage("Quiz moved to drafts successfully")
+                        .withMessage("Quiz returned to draft successfully")
                         .withPayload(quiz)
         );
     }

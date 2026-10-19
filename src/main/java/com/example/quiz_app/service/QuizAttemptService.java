@@ -69,7 +69,7 @@ public class QuizAttemptService {
         return toResponse(attemptRepository.save(attempt));
     }
 
-    public AnswerSubmissionResponse submitAnswer(
+    public AnswerFeedbackResponse submitAnswer(
             String authenticatedEmail,
             String attemptRefId,
             SubmitAnswerRequest request
@@ -85,7 +85,6 @@ public class QuizAttemptService {
         }
 
         User participant = getActiveParticipant(authenticatedEmail);
-
         QuizAttempt attempt = getOwnedAttempt(
                 attemptRefId, participant.getRefId());
 
@@ -121,12 +120,12 @@ public class QuizAttemptService {
         answer.setAnsweredAt(LocalDateTime.now());
 
         attempt.getAnswers().add(answer);
-
         QuizAttempt savedAttempt = attemptRepository.save(attempt);
 
-        return new AnswerSubmissionResponse(
+        return new AnswerFeedbackResponse(
                 savedAttempt.getRefId(),
                 question.getRefId(),
+                option.getRefId(),
                 savedAttempt.getAnswers().size(),
                 savedAttempt.getTotalQuestions()
         );
@@ -179,6 +178,7 @@ public class QuizAttemptService {
                 savedAttempt, quiz, participant);
 
         return toResponse(savedAttempt);
+        return toResponse(attemptRepository.save(attempt));
     }
 
     public QuizAttemptResponse getAttempt(
