@@ -62,6 +62,7 @@ public class SecurityConfig {
                         // Super Admin
                         .requestMatchers("/api/admin/users/**").hasAuthority("MANAGE_USER")
                         .requestMatchers("/api/admin/roles/**").hasAuthority("MANAGE_ROLE")
+                        .requestMatchers("/api/dashboard/**").hasRole("SUPER_ADMIN")
 
                         // Quiz management
                         // Authenticated users may read categories

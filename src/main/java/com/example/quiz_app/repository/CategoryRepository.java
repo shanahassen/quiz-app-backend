@@ -15,4 +15,6 @@ public interface CategoryRepository extends MongoRepository<Category, String> {
     Optional<Category> findByRefId(String refId);
 
     List<Category> findByStatus(Status status);
+
+    long countByStatus(Status status);
 }
