@@ -2,10 +2,7 @@ package com.example.quiz_app.service;
 
 import com.example.quiz_app.common.QuizException;
 import com.example.quiz_app.common.StatusCode;
-import com.example.quiz_app.dto.AnswerFeedbackResponse;
-import com.example.quiz_app.dto.QuizAttemptResponse;
-import com.example.quiz_app.dto.StartQuizAttemptRequest;
-import com.example.quiz_app.dto.SubmitAnswerRequest;
+import com.example.quiz_app.dto.*;
 import com.example.quiz_app.model.Quiz;
 import com.example.quiz_app.model.QuizAttempt;
 import com.example.quiz_app.model.QuizAttemptStatus;
@@ -16,8 +13,8 @@ import com.example.quiz_app.repository.QuizAttemptRepository;
 import com.example.quiz_app.repository.QuizRepository;
 import com.example.quiz_app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +27,7 @@ public class QuizAttemptService {
     private final QuizAttemptRepository attemptRepository;
     private final QuizRepository quizRepository;
     private final UserRepository userRepository;
+    private final CertificateService certificateService;
 
     public QuizAttemptResponse startAttempt(
             String authenticatedEmail,
@@ -173,6 +171,13 @@ public class QuizAttemptService {
         attempt.setStatus(QuizAttemptStatus.SUBMITTED);
         attempt.setSubmittedAt(LocalDateTime.now());
 
+        QuizAttempt savedAttempt = attemptRepository.save(attempt);
+
+        // Generate a certificate for every submitted attempt.
+        certificateService.createForSubmittedAttempt(
+                savedAttempt, quiz, participant);
+
+        return toResponse(savedAttempt);
         return toResponse(attemptRepository.save(attempt));
     }
 
@@ -186,6 +191,44 @@ public class QuizAttemptService {
                 attemptRefId, participant.getRefId());
 
         return toResponse(attempt);
+    }
+
+
+    public List<QuizAttemptHistoryResponse> getAttemptHistory(
+            String authenticatedEmail
+    ) throws QuizException {
+
+        User participant = getActiveParticipant(authenticatedEmail);
+
+        return attemptRepository.findByParticipantRefId(
+                        participant.getRefId(),
+                        Sort.by(Sort.Direction.DESC, "startedAt")
+                )
+                .stream()
+                .map(attempt -> {
+                    String quizTitle = quizRepository
+                            .findByRefId(attempt.getQuizRefId())
+                            .map(Quiz::getTitle)
+                            .orElse("Quiz no longer available");
+
+                    int answeredQuestions = attempt.getAnswers() == null
+                            ? 0
+                            : attempt.getAnswers().size();
+
+                    return new QuizAttemptHistoryResponse(
+                            attempt.getRefId(),
+                            attempt.getQuizRefId(),
+                            quizTitle,
+                            attempt.getStatus(),
+                            answeredQuestions,
+                            attempt.getTotalQuestions() == null
+                                    ? 0 : attempt.getTotalQuestions(),
+                            attempt.getScore(),
+                            attempt.getStartedAt(),
+                            attempt.getSubmittedAt()
+                    );
+                })
+                .toList();
     }
 
     private User getActiveParticipant(String email) throws QuizException {

@@ -4,6 +4,7 @@ public record AnswerFeedbackResponse(
         String attemptRefId,
         String questionRefId,
         String selectedOptionRefId,
+        boolean correct,
         int answeredQuestions,
         int totalQuestions
 ) {

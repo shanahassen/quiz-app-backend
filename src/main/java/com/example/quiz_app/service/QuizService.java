@@ -4,6 +4,7 @@ import com.example.quiz_app.common.QuizException;
 import com.example.quiz_app.common.StatusCode;
 import com.example.quiz_app.dto.ParticipantQuizResponse;
 import com.example.quiz_app.dto.QuizRequest;
+import com.example.quiz_app.dto.ParticipantQuizResponse;
 import com.example.quiz_app.model.Category;
 import com.example.quiz_app.model.Quiz;
 import com.example.quiz_app.model.QuizStatus;
@@ -222,6 +223,7 @@ public class QuizService {
                 && quiz.getStatus() != QuizStatus.ARCHIVED) {
             throw new QuizException(StatusCode.E7001,
                     "Only published or archived quizzes can be moved to draft.");
+                    "Only published or archived quizzes can be moved to drafts.");
         }
 
         quiz.setStatus(QuizStatus.DRAFT);
@@ -240,7 +242,6 @@ public class QuizService {
         return quizRepository.save(quiz);
     }
 
-    // Return published quizzes without exposing hints or correct-answer flags.
     public List<ParticipantQuizResponse> getPublishedQuizzes() {
         return quizRepository.findByStatus(QuizStatus.PUBLISHED)
                 .stream()

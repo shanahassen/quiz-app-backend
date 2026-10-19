@@ -3,16 +3,15 @@ package com.example.quiz_app.controller;
 import com.example.quiz_app.common.ApiResponse;
 import com.example.quiz_app.common.QuizException;
 import com.example.quiz_app.common.StatusCode;
-import com.example.quiz_app.dto.AnswerFeedbackResponse;
-import com.example.quiz_app.dto.QuizAttemptResponse;
-import com.example.quiz_app.dto.StartQuizAttemptRequest;
-import com.example.quiz_app.dto.SubmitAnswerRequest;
+import com.example.quiz_app.dto.*;
+import com.example.quiz_app.dto.AnswerSubmissionResponse;
 import com.example.quiz_app.service.QuizAttemptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/quiz-attempts")
@@ -82,6 +81,21 @@ public class QuizAttemptController {
         ApiResponse response = ApiResponse.forStatus(StatusCode.S0000)
                 .withMessage("Quiz attempt retrieved successfully.")
                 .withPayload(attempt);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponse> getAttemptHistory(
+            Authentication authentication
+    ) throws QuizException {
+
+        List<QuizAttemptHistoryResponse> history =
+                attemptService.getAttemptHistory(authentication.getName());
+
+        ApiResponse response = ApiResponse.forStatus(StatusCode.S0000)
+                .withMessage("Quiz history retrieved successfully.")
+                .withPayload(history);
 
         return ResponseEntity.ok(response);
     }

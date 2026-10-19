@@ -1,4 +1,3 @@
-
 package com.example.quiz_app.dto;
 
 import java.util.List;

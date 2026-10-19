@@ -18,6 +18,9 @@ public interface QuizRepository extends MongoRepository<Quiz, String> {
 
     List<Quiz> findByStatus(QuizStatus status);
 
+    // Dashboard statistics
+    long countByStatus(QuizStatus status);
+
     boolean existsByTitleIgnoreCaseAndCategoryRefIdAndStatusNot(
             String title,
             String categoryRefId,
