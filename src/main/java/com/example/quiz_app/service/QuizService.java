@@ -2,8 +2,8 @@ package com.example.quiz_app.service;
 
 import com.example.quiz_app.common.QuizException;
 import com.example.quiz_app.common.StatusCode;
-import com.example.quiz_app.dto.QuizRequest;
 import com.example.quiz_app.dto.ParticipantQuizResponse;
+import com.example.quiz_app.dto.QuizRequest;
 import com.example.quiz_app.model.Category;
 import com.example.quiz_app.model.Quiz;
 import com.example.quiz_app.model.QuizStatus;
@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -92,7 +93,6 @@ public class QuizService {
         return quizRepository.save(quiz);
     }
 
-
     public Quiz updateQuiz(String refId, QuizRequest request)
             throws QuizException {
         validateRequest(request);
@@ -100,9 +100,9 @@ public class QuizService {
         Quiz quiz = getQuizByRefId(refId);
 
         if (quiz.getStatus() != QuizStatus.DRAFT
-                && quiz.getStatus() != QuizStatus.UNPUBLISHED) {
+                && quiz.getStatus() != QuizStatus.ARCHIVED) {
             throw new QuizException(StatusCode.E7001,
-                    "Only draft or unpublished quizzes can be updated.");
+                    "Only draft or archived quizzes can be updated.");
         }
 
         if (quizAttemptRepository.existsByQuizRefId(refId)) {
@@ -142,7 +142,12 @@ public class QuizService {
 
         for (QuizRequest.QuestionRequest questionRequest : request.questions()) {
             Quiz.Question question = new Quiz.Question();
-            question.setRefId(UUID.randomUUID().toString());
+            question.setRefId(
+                    questionRequest.refId() == null
+                            || questionRequest.refId().isBlank()
+                            ? UUID.randomUUID().toString()
+                            : questionRequest.refId()
+            );
             question.setText(questionRequest.text().trim());
             question.setHint(
                     questionRequest.hint() == null
@@ -155,7 +160,12 @@ public class QuizService {
             for (QuizRequest.AnswerOptionRequest optionRequest
                     : questionRequest.options()) {
                 Quiz.AnswerOption option = new Quiz.AnswerOption();
-                option.setRefId(UUID.randomUUID().toString());
+                option.setRefId(
+                        optionRequest.refId() == null
+                                || optionRequest.refId().isBlank()
+                                ? UUID.randomUUID().toString()
+                                : optionRequest.refId()
+                );
                 option.setText(optionRequest.text().trim());
                 option.setCorrect(optionRequest.correct());
                 options.add(option);
@@ -185,9 +195,9 @@ public class QuizService {
         Quiz quiz = getQuizByRefId(refId);
 
         if (quiz.getStatus() != QuizStatus.DRAFT
-                && quiz.getStatus() != QuizStatus.UNPUBLISHED) {
+                && quiz.getStatus() != QuizStatus.ARCHIVED) {
             throw new QuizException(StatusCode.E7001,
-                    "Only draft or unpublished quizzes can be published.");
+                    "Only draft or archived quizzes can be published.");
         }
 
         Category category = categoryRepository.findByRefId(
@@ -205,15 +215,16 @@ public class QuizService {
         return quizRepository.save(quiz);
     }
 
-    public Quiz unpublishQuiz(String refId) throws QuizException {
+    public Quiz moveQuizToDraft(String refId) throws QuizException {
         Quiz quiz = getQuizByRefId(refId);
 
-        if (quiz.getStatus() != QuizStatus.PUBLISHED) {
+        if (quiz.getStatus() != QuizStatus.PUBLISHED
+                && quiz.getStatus() != QuizStatus.ARCHIVED) {
             throw new QuizException(StatusCode.E7001,
-                    "Only published quizzes can be unpublished.");
+                    "Only published or archived quizzes can be moved to draft.");
         }
 
-        quiz.setStatus(QuizStatus.UNPUBLISHED);
+        quiz.setStatus(QuizStatus.DRAFT);
         return quizRepository.save(quiz);
     }
 
@@ -229,8 +240,7 @@ public class QuizService {
         return quizRepository.save(quiz);
     }
 
-
-    // Return published quizzes without hints or correct-answer flags.
+    // Return published quizzes without exposing hints or correct-answer flags.
     public List<ParticipantQuizResponse> getPublishedQuizzes() {
         return quizRepository.findByStatus(QuizStatus.PUBLISHED)
                 .stream()
@@ -275,7 +285,6 @@ public class QuizService {
         return question.getHint();
     }
 
-    // Explicit mapping prevents correct flags and hints from leaking.
     private ParticipantQuizResponse toParticipantResponse(Quiz quiz) {
         List<ParticipantQuizResponse.QuestionResponse> questions =
                 quiz.getQuestions().stream()
@@ -283,6 +292,8 @@ public class QuizService {
                                 new ParticipantQuizResponse.QuestionResponse(
                                         question.getRefId(),
                                         question.getText(),
+                                        question.getHint() != null
+                                                && !question.getHint().isBlank(),
                                         question.getOptions().stream()
                                                 .map(option ->
                                                         new ParticipantQuizResponse.OptionResponse(
@@ -360,13 +371,18 @@ public class QuizService {
             HashSet<String> optionTexts = new HashSet<>();
 
             for (QuizRequest.AnswerOptionRequest option : question.options()) {
-                if (option == null || option.text() == null
+                if (option == null
+                        || option.text() == null
                         || option.text().isBlank()) {
                     throw new QuizException(StatusCode.E7001,
                             "Every answer option must have text.");
                 }
 
-                if (!optionTexts.add(option.text().trim().toLowerCase())) {
+                String normalizedText = option.text()
+                        .trim()
+                        .toLowerCase(Locale.ROOT);
+
+                if (!optionTexts.add(normalizedText)) {
                     throw new QuizException(StatusCode.E7001,
                             "Answer options must not be duplicated within a question.");
                 }
