@@ -1,6 +1,7 @@
 package com.example.quiz_app.service;
 
 import com.example.quiz_app.common.QuizException;
+import com.example.quiz_app.dto.CreatePermissionRequest;
 import com.example.quiz_app.model.Status;
 import com.example.quiz_app.common.StatusCode;
 import com.example.quiz_app.dto.UpdatePermissionRequest;
@@ -10,6 +11,7 @@ import com.example.quiz_app.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -118,6 +120,43 @@ public class PermissionService {
                     "Permission is already active");
         }
 
+        permission.setStatus(Status.ACTIVE);
+
+        return permissionRepository.save(permission);
+    }
+
+    public Permission createPermission(
+            CreatePermissionRequest request
+    ) throws QuizException {
+
+        if (request.name() == null || request.name().isBlank()) {
+            throw new QuizException(
+                    StatusCode.E4000,
+                    "Permission name is required");
+        }
+
+        // Normalize the name, e.g. "Manage User" -> "MANAGE_USER"
+        String name = request.name()
+                .trim()
+                .toUpperCase()
+                .replaceAll("\\s+", "_");
+
+        if (!name.matches("[A-Z][A-Z0-9_]*")) {
+            throw new QuizException(
+                    StatusCode.E4000,
+                    "Permission name must contain only letters, numbers and underscores, and start with a letter");
+        }
+
+        if (permissionRepository.findByName(name).isPresent()) {
+            throw new QuizException(
+                    StatusCode.E4009,
+                    "A permission with this name already exists");
+        }
+
+        Permission permission = new Permission();
+        permission.setRefId(UUID.randomUUID().toString());
+        permission.setName(name);
+        permission.setDescription(request.description());
         permission.setStatus(Status.ACTIVE);
 
         return permissionRepository.save(permission);

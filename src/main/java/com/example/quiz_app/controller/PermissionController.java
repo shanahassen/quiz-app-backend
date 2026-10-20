@@ -3,6 +3,7 @@ package com.example.quiz_app.controller;
 import com.example.quiz_app.common.ApiResponse;
 import com.example.quiz_app.common.QuizException;
 import com.example.quiz_app.common.StatusCode;
+import com.example.quiz_app.dto.CreatePermissionRequest;
 import com.example.quiz_app.dto.UpdatePermissionRequest;
 import com.example.quiz_app.model.Permission;
 import com.example.quiz_app.service.PermissionService;
@@ -79,6 +80,20 @@ public class PermissionController {
                         .withMessage("Permission reactivated successfully")
                         .withPayload(
                                 permissionService.reactivatePermission(refId))
+        );
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse> createPermission(
+            @RequestBody CreatePermissionRequest request
+    ) throws QuizException {
+
+        Permission permission = permissionService.createPermission(request);
+
+        return ResponseEntity.ok(
+                ApiResponse.forStatus(StatusCode.S0000)
+                        .withMessage("Permission created successfully")
+                        .withPayload(permission)
         );
     }
 }
