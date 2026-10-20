@@ -223,7 +223,6 @@ public class QuizService {
                 && quiz.getStatus() != QuizStatus.ARCHIVED) {
             throw new QuizException(StatusCode.E7001,
                     "Only published or archived quizzes can be moved to draft.");
-                    "Only published or archived quizzes can be moved to drafts.");
         }
 
         quiz.setStatus(QuizStatus.DRAFT);

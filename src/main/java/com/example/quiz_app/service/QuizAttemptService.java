@@ -126,6 +126,7 @@ public class QuizAttemptService {
                 savedAttempt.getRefId(),
                 question.getRefId(),
                 option.getRefId(),
+                option.isCorrect(),
                 savedAttempt.getAnswers().size(),
                 savedAttempt.getTotalQuestions()
         );
@@ -177,7 +178,6 @@ public class QuizAttemptService {
         certificateService.createForSubmittedAttempt(
                 savedAttempt, quiz, participant);
 
-        return toResponse(savedAttempt);
         return toResponse(attemptRepository.save(attempt));
     }
 
