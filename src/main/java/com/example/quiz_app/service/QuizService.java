@@ -4,7 +4,6 @@ import com.example.quiz_app.common.QuizException;
 import com.example.quiz_app.common.StatusCode;
 import com.example.quiz_app.dto.ParticipantQuizResponse;
 import com.example.quiz_app.dto.QuizRequest;
-import com.example.quiz_app.dto.ParticipantQuizResponse;
 import com.example.quiz_app.model.Category;
 import com.example.quiz_app.model.Quiz;
 import com.example.quiz_app.model.QuizStatus;
@@ -13,8 +12,9 @@ import com.example.quiz_app.repository.CategoryRepository;
 import com.example.quiz_app.repository.QuizAttemptRepository;
 import com.example.quiz_app.repository.QuizRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +28,7 @@ public class QuizService {
     private final QuizAttemptRepository quizAttemptRepository;
     private final QuizRepository quizRepository;
     private final CategoryRepository categoryRepository;
+    private final AuditLogService auditLogService;
 
     public Quiz createQuiz(QuizRequest request) throws QuizException {
         validateRequest(request);
@@ -91,7 +92,17 @@ public class QuizService {
 
         quiz.setQuestions(questions);
 
-        return quizRepository.save(quiz);
+        Quiz savedQuiz = quizRepository.save(quiz);
+
+        auditLogService.logAction(
+                getCurrentActorEmail(),
+                "QUIZ_CREATED",
+                "Quiz",
+                savedQuiz.getRefId(),
+                "Created quiz: " + savedQuiz.getTitle()
+        );
+
+        return savedQuiz;
     }
 
     public Quiz updateQuiz(String refId, QuizRequest request)
@@ -178,7 +189,17 @@ public class QuizService {
 
         quiz.setQuestions(questions);
 
-        return quizRepository.save(quiz);
+        Quiz savedQuiz = quizRepository.save(quiz);
+
+        auditLogService.logAction(
+                getCurrentActorEmail(),
+                "QUIZ_UPDATED",
+                "Quiz",
+                savedQuiz.getRefId(),
+                "Updated quiz: " + savedQuiz.getTitle()
+        );
+
+        return savedQuiz;
     }
 
     public List<Quiz> getAllQuizzes() {
@@ -213,7 +234,17 @@ public class QuizService {
         }
 
         quiz.setStatus(QuizStatus.PUBLISHED);
-        return quizRepository.save(quiz);
+        Quiz savedQuiz = quizRepository.save(quiz);
+
+        auditLogService.logAction(
+                getCurrentActorEmail(),
+                "QUIZ_PUBLISHED",
+                "Quiz",
+                savedQuiz.getRefId(),
+                "Published quiz: " + savedQuiz.getTitle()
+        );
+
+        return savedQuiz;
     }
 
     public Quiz moveQuizToDraft(String refId) throws QuizException {
@@ -226,7 +257,17 @@ public class QuizService {
         }
 
         quiz.setStatus(QuizStatus.DRAFT);
-        return quizRepository.save(quiz);
+        Quiz savedQuiz = quizRepository.save(quiz);
+
+        auditLogService.logAction(
+                getCurrentActorEmail(),
+                "QUIZ_UNPUBLISHED",
+                "Quiz",
+                savedQuiz.getRefId(),
+                "Moved quiz back to Draft: " + savedQuiz.getTitle()
+        );
+
+        return savedQuiz;
     }
 
     public Quiz archiveQuiz(String refId) throws QuizException {
@@ -238,7 +279,17 @@ public class QuizService {
         }
 
         quiz.setStatus(QuizStatus.ARCHIVED);
-        return quizRepository.save(quiz);
+        Quiz savedQuiz = quizRepository.save(quiz);
+
+        auditLogService.logAction(
+                getCurrentActorEmail(),
+                "QUIZ_ARCHIVED",
+                "Quiz",
+                savedQuiz.getRefId(),
+                "Archived quiz: " + savedQuiz.getTitle()
+        );
+
+        return savedQuiz;
     }
 
     public List<ParticipantQuizResponse> getPublishedQuizzes() {
@@ -397,5 +448,20 @@ public class QuizService {
                         "Each question must have exactly one correct answer.");
             }
         }
+    }
+
+    private String getCurrentActorEmail() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication.getName() == null
+                || authentication.getName().isBlank()
+                || "anonymousUser".equals(authentication.getName())) {
+            return "UNKNOWN";
+        }
+
+        return authentication.getName();
     }
 }

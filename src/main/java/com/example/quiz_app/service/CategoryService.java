@@ -1,23 +1,26 @@
 package com.example.quiz_app.service;
 
-import com.example.quiz_app.dto.CategoryRequest;
-import com.example.quiz_app.dto.CategoryResponse;
 import com.example.quiz_app.common.QuizException;
 import com.example.quiz_app.common.StatusCode;
+import com.example.quiz_app.dto.CategoryRequest;
+import com.example.quiz_app.dto.CategoryResponse;
 import com.example.quiz_app.model.Category;
 import com.example.quiz_app.model.Status;
 import com.example.quiz_app.repository.CategoryRepository;
+import com.example.quiz_app.util.ValidationUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
-import com.example.quiz_app.util.ValidationUtil;
 
 @Service
 @RequiredArgsConstructor
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final AuditLogService auditLogService;
 
     public CategoryResponse createCategory(CategoryRequest request)
             throws QuizException {
@@ -25,8 +28,7 @@ public class CategoryService {
         ValidationUtil.validateCategory(request);
 
         if (categoryRepository.existsByNameIgnoreCaseAndStatus(
-                request.name().trim(),
-                Status.ACTIVE)) {
+                request.name().trim(), Status.ACTIVE)) {
 
             throw new QuizException(
                     StatusCode.E4009,
@@ -35,13 +37,20 @@ public class CategoryService {
         }
 
         Category category = new Category();
-
         category.setRefId(UUID.randomUUID().toString());
         category.setName(request.name().trim());
         category.setDescription(request.description());
         category.setStatus(Status.ACTIVE);
 
         Category savedCategory = categoryRepository.save(category);
+
+        auditLogService.logAction(
+                getActorEmail(),
+                "CATEGORY_CREATED",
+                "Category",
+                savedCategory.getRefId(),
+                "Created category: " + savedCategory.getName()
+        );
 
         return toResponse(savedCategory);
     }
@@ -57,12 +66,11 @@ public class CategoryService {
             throws QuizException {
 
         Category category = categoryRepository.findByRefId(refId)
-                .orElseThrow(() ->
-                        new QuizException(
-                                StatusCode.E4004,
-                                "Category not found"
-                        )
-                );
+                .orElseThrow(() -> new QuizException(
+                        StatusCode.E4004,
+                        "Category not found"
+                ));
+
         return toResponse(category);
     }
 
@@ -74,12 +82,10 @@ public class CategoryService {
         ValidationUtil.validateCategory(request);
 
         Category category = categoryRepository.findByRefId(refId)
-                .orElseThrow(() ->
-                        new QuizException(
-                                StatusCode.E4004,
-                                "Category not found"
-                        )
-                );
+                .orElseThrow(() -> new QuizException(
+                        StatusCode.E4004,
+                        "Category not found"
+                ));
 
         if (category.getStatus() == Status.INACTIVE) {
             throw new QuizException(
@@ -90,13 +96,26 @@ public class CategoryService {
 
         if (categoryRepository.existsByNameIgnoreCaseAndStatusAndRefIdNot(
                 request.name().trim(), Status.ACTIVE, refId)) {
-            throw new QuizException(StatusCode.E4009, "A category with this name already exists");
+
+            throw new QuizException(
+                    StatusCode.E4009,
+                    "A category with this name already exists"
+            );
         }
 
         category.setName(request.name().trim());
         category.setDescription(request.description());
 
         Category updatedCategory = categoryRepository.save(category);
+
+        auditLogService.logAction(
+                getActorEmail(),
+                "CATEGORY_UPDATED",
+                "Category",
+                updatedCategory.getRefId(),
+                "Updated category: " + updatedCategory.getName()
+        );
+
         return toResponse(updatedCategory);
     }
 
@@ -104,12 +123,10 @@ public class CategoryService {
             throws QuizException {
 
         Category category = categoryRepository.findByRefId(refId)
-                .orElseThrow(() ->
-                        new QuizException(
-                                StatusCode.E4004,
-                                "Category not found"
-                        )
-                );
+                .orElseThrow(() -> new QuizException(
+                        StatusCode.E4004,
+                        "Category not found"
+                ));
 
         if (category.getStatus() == Status.INACTIVE) {
             throw new QuizException(
@@ -119,19 +136,25 @@ public class CategoryService {
         }
 
         category.setStatus(Status.INACTIVE);
-        categoryRepository.save(category);
+        Category savedCategory = categoryRepository.save(category);
+
+        auditLogService.logAction(
+                getActorEmail(),
+                "CATEGORY_DEACTIVATED",
+                "Category",
+                savedCategory.getRefId(),
+                "Deactivated category: " + savedCategory.getName()
+        );
     }
 
     public void reactivateCategory(String refId)
             throws QuizException {
 
         Category category = categoryRepository.findByRefId(refId)
-                .orElseThrow(() ->
-                        new QuizException(
-                                StatusCode.E4004,
-                                "Category not found"
-                        )
-                );
+                .orElseThrow(() -> new QuizException(
+                        StatusCode.E4004,
+                        "Category not found"
+                ));
 
         if (category.getStatus() == Status.ACTIVE) {
             throw new QuizException(
@@ -141,11 +164,32 @@ public class CategoryService {
         }
 
         category.setStatus(Status.ACTIVE);
-        categoryRepository.save(category);
+        Category savedCategory = categoryRepository.save(category);
+
+        auditLogService.logAction(
+                getActorEmail(),
+                "CATEGORY_REACTIVATED",
+                "Category",
+                savedCategory.getRefId(),
+                "Reactivated category: " + savedCategory.getName()
+        );
+    }
+
+    private String getActorEmail() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication.getName() == null
+                || "anonymousUser".equals(authentication.getName())) {
+            return "UNKNOWN";
+        }
+
+        return authentication.getName();
     }
 
     private CategoryResponse toResponse(Category category) {
-
         return new CategoryResponse(
                 category.getRefId(),
                 category.getName(),
