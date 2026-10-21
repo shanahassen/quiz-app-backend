@@ -20,7 +20,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import java.util.Locale;
 import java.util.UUID;
 
@@ -34,6 +33,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final AuditLogService auditLogService;
 
     public User register(RegisterRequest request) throws QuizException {
         ValidationUtil.validateRegistration(request);
@@ -63,6 +63,15 @@ public class AuthService {
         user.setRoleId(participantRole.getId());
 
         User saved = userRepository.save(user);
+
+        auditLogService.logAction(
+                saved.getEmail(),
+                "USER_REGISTERED",
+                "User",
+                saved.getRefId(),
+                "Participant registered: " + saved.getEmail()
+        );
+
         log.info("User registered successfully: {}", saved.getEmail());
         return saved;
     }
@@ -78,7 +87,19 @@ public class AuthService {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, request.password()));
         } catch (AuthenticationException exception) {
-            throw new QuizException(StatusCode.E4001, "Invalid email or password", exception);
+            auditLogService.logAction(
+                    email,
+                    "USER_LOGIN_FAILED",
+                    "User",
+                    null,
+                    "Failed login attempt for email: " + email
+            );
+
+            throw new QuizException(
+                    StatusCode.E4001,
+                    "Invalid email or password",
+                    exception
+            );
         }
 
         log.info("Authentication successful for email: {}", email);
@@ -86,10 +107,22 @@ public class AuthService {
         User user = userRepository.findByEmailIgnoreCaseAndStatus(
                         authentication.getName(), Status.ACTIVE)
                 .orElseThrow(() -> new QuizException(StatusCode.E4004, "User not found"));
+
         Role role = roleRepository.findById(user.getRoleId())
-                .orElseThrow(() -> new QuizException(StatusCode.E5000, "User role is not configured"));
+                .orElseThrow(() -> new QuizException(
+                        StatusCode.E5000, "User role is not configured"));
+
+        // Record successful login
+        auditLogService.logAction(
+                user.getEmail(),
+                "USER_LOGIN_SUCCESS",
+                "User",
+                user.getRefId(),
+                "User logged in successfully"
+        );
 
         log.info("User {} logged in with role {}", user.getEmail(), role.getRoleName());
+
         String token = jwtService.generateToken(authentication.getName());
 
         return new AuthResponse(
@@ -104,12 +137,17 @@ public class AuthService {
     public void assignAdminRole(String userRefId) throws QuizException {
         User user = userRepository.findByRefId(userRefId)
                 .orElseThrow(() -> new QuizException(StatusCode.E4004, "User not found"));
+
         if (user.getStatus() != Status.ACTIVE) {
-            throw new QuizException(StatusCode.E4004, "Inactive users cannot be assigned the admin role");
+            throw new QuizException(
+                    StatusCode.E4004,
+                    "Inactive users cannot be assigned the admin role");
         }
 
         Role adminRole = roleRepository.findByRoleName(RoleName.ADMIN)
-                .orElseThrow(() -> new QuizException(StatusCode.E5000, "Admin role is not configured"));
+                .orElseThrow(() -> new QuizException(
+                        StatusCode.E5000, "Admin role is not configured"));
+
         user.setRoleId(adminRole.getId());
         userRepository.save(user);
     }

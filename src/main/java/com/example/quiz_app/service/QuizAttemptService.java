@@ -28,6 +28,7 @@ public class QuizAttemptService {
     private final QuizRepository quizRepository;
     private final UserRepository userRepository;
     private final CertificateService certificateService;
+    private final AuditLogService auditLogService;
 
     public QuizAttemptResponse startAttempt(
             String authenticatedEmail,
@@ -66,7 +67,17 @@ public class QuizAttemptService {
         attempt.setScore(null);
         attempt.setStartedAt(LocalDateTime.now());
 
-        return toResponse(attemptRepository.save(attempt));
+        QuizAttempt savedAttempt = attemptRepository.save(attempt);
+
+        auditLogService.logAction(
+                participant.getEmail(),
+                "QUIZ_STARTED",
+                "QuizAttempt",
+                savedAttempt.getRefId(),
+                "Started quiz: " + quiz.getTitle()
+        );
+
+        return toResponse(savedAttempt);
     }
 
     public AnswerFeedbackResponse submitAnswer(
@@ -174,11 +185,19 @@ public class QuizAttemptService {
 
         QuizAttempt savedAttempt = attemptRepository.save(attempt);
 
+        auditLogService.logAction(
+                participant.getEmail(),
+                "QUIZ_SUBMITTED",
+                "QuizAttempt",
+                savedAttempt.getRefId(),
+                "Submitted quiz: " + quiz.getTitle()
+        );
+
         // Generate a certificate for every submitted attempt.
         certificateService.createForSubmittedAttempt(
                 savedAttempt, quiz, participant);
 
-        return toResponse(attemptRepository.save(attempt));
+        return toResponse(savedAttempt);
     }
 
     public QuizAttemptResponse getAttempt(
@@ -192,7 +211,6 @@ public class QuizAttemptService {
 
         return toResponse(attempt);
     }
-
 
     public List<QuizAttemptHistoryResponse> getAttemptHistory(
             String authenticatedEmail
