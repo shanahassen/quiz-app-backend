@@ -14,7 +14,7 @@ import com.example.quiz_app.repository.QuizAttemptRepository;
 import com.example.quiz_app.repository.QuizRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+import com.example.quiz_app.model.QuizAttemptStatus;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -182,7 +182,19 @@ public class QuizService {
     }
 
     public List<Quiz> getAllQuizzes() {
-        return quizRepository.findAll();
+        List<Quiz> quizzes = quizRepository.findAll();
+
+        for (Quiz quiz : quizzes) {
+            long activeCount =
+                    quizAttemptRepository.countByQuizRefIdAndStatus(
+                            quiz.getRefId(),
+                            QuizAttemptStatus.IN_PROGRESS
+                    );
+
+            quiz.setActiveAttemptCount(activeCount);
+        }
+
+        return quizzes;
     }
 
     public Quiz getQuizByRefId(String refId) throws QuizException {
@@ -233,8 +245,29 @@ public class QuizService {
         Quiz quiz = getQuizByRefId(refId);
 
         if (quiz.getStatus() == QuizStatus.ARCHIVED) {
-            throw new QuizException(StatusCode.E7001,
-                    "Quiz is already archived.");
+            throw new QuizException(
+                    StatusCode.E7001,
+                    "Quiz is already archived."
+            );
+        }
+
+        long activeCount =
+                quizAttemptRepository.countByQuizRefIdAndStatus(
+                        quiz.getRefId(),
+                        QuizAttemptStatus.IN_PROGRESS
+                );
+
+        if (activeCount > 0) {
+            String participantText =
+                    activeCount == 1 ? "participant is" : "participants are";
+
+            throw new QuizException(
+                    StatusCode.E7001,
+                    "Cannot archive this quiz because "
+                            + activeCount + " " + participantText
+                            + " currently taking it. Please wait until "
+                            + "all active attempts are completed."
+            );
         }
 
         quiz.setStatus(QuizStatus.ARCHIVED);
