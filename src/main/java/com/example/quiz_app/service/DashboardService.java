@@ -2,17 +2,12 @@ package com.example.quiz_app.service;
 
 import com.example.quiz_app.dto.DashboardStatsResponse;
 import com.example.quiz_app.dto.NewestUserResponse;
-import com.example.quiz_app.model.QuizStatus;
-import com.example.quiz_app.model.Role;
-import com.example.quiz_app.model.RoleName;
-import com.example.quiz_app.model.Status;
-import com.example.quiz_app.repository.CategoryRepository;
-import com.example.quiz_app.repository.QuizRepository;
-import com.example.quiz_app.repository.RoleRepository;
-import com.example.quiz_app.repository.UserRepository;
+import com.example.quiz_app.model.*;
+import com.example.quiz_app.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +17,7 @@ public class DashboardService {
     private final CategoryRepository categoryRepository;
     private final QuizRepository quizRepository;
     private final RoleRepository roleRepository;
+    private final AuditLogRepository auditLogRepository;
 
     public DashboardStatsResponse getDashboardStats() {
 
@@ -72,5 +68,18 @@ public class DashboardService {
                         user.getCreatedAt()
                 ))
                 .toList();
+    }
+
+    public Map<String, List<AuditLog>> getRecentActivity() {
+        List<AuditLog> categoryActivity =
+                auditLogRepository.findTop3ByEntityTypeOrderByTimestampDesc("Category");
+
+        List<AuditLog> quizActivity =
+                auditLogRepository.findTop3ByEntityTypeOrderByTimestampDesc("Quiz");
+
+        return Map.of(
+                "categoryActivity", categoryActivity,
+                "quizActivity", quizActivity
+        );
     }
 }
