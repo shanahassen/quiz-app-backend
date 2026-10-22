@@ -5,6 +5,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 import java.util.Optional;
+import com.example.quiz_app.model.QuizAttemptStatus;
 
 public interface QuizAttemptRepository
         extends MongoRepository<QuizAttempt, String> {
@@ -30,5 +31,10 @@ public interface QuizAttemptRepository
     List<QuizAttempt> findByParticipantRefId(
             String participantRefId,
             Sort sort
+    );
+
+    long countByQuizRefIdAndStatus(
+            String quizRefId,
+            QuizAttemptStatus status
     );
 }

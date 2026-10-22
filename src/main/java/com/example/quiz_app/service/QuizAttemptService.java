@@ -197,7 +197,7 @@ public class QuizAttemptService {
         certificateService.createForSubmittedAttempt(
                 savedAttempt, quiz, participant);
 
-        return toResponse(savedAttempt);
+        return toResponse(attemptRepository.save(attempt));
     }
 
     public QuizAttemptResponse getAttempt(

@@ -3,6 +3,7 @@ package com.example.quiz_app.model;
 import lombok.Data;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.annotation.Transient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,9 @@ public class Quiz extends BaseEntity {
         private String hint;
         private List<AnswerOption> options = new ArrayList<>();
     }
+
+    @Transient
+    private long activeAttemptCount;
 
     @Data
     public static class AnswerOption {
