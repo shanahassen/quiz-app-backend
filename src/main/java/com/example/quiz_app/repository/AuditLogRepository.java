@@ -8,4 +8,6 @@ public interface AuditLogRepository
         extends MongoRepository<AuditLog, String> {
 
     List<AuditLog> findAllByOrderByTimestampDesc();
+
+    List<AuditLog> findTop3ByEntityTypeOrderByTimestampDesc(String entityType);
 }
