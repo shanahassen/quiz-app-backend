@@ -17,7 +17,6 @@ public class ApiResponse {
     private Object payload;
     private long totalElements;
 
-
     protected ApiResponse() {
         this.timestamp = LocalDateTime.now();
     }
