@@ -8,6 +8,11 @@ import com.example.quiz_app.model.Category;
 import com.example.quiz_app.model.Status;
 import com.example.quiz_app.repository.CategoryRepository;
 import com.example.quiz_app.util.ValidationUtil;
+import com.example.quiz_app.model.Quiz;
+import com.example.quiz_app.model.QuizAttemptStatus;
+import com.example.quiz_app.model.QuizStatus;
+import com.example.quiz_app.repository.QuizAttemptRepository;
+import com.example.quiz_app.repository.QuizRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,6 +25,8 @@ import java.util.UUID;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final QuizRepository quizRepository;
+    private final QuizAttemptRepository quizAttemptRepository;
     private final AuditLogService auditLogService;
 
     public CategoryResponse createCategory(CategoryRequest request)
@@ -132,6 +139,30 @@ public class CategoryService {
             throw new QuizException(
                     StatusCode.E4004,
                     "Category is already inactive"
+            );
+        }
+
+        List<Quiz> categoryQuizzes =
+                quizRepository.findByCategoryRefIdAndStatusNot(
+                        category.getRefId(),
+                        QuizStatus.ARCHIVED
+                );
+
+        long activeAttemptCount = categoryQuizzes.stream()
+                .mapToLong(quiz ->
+                        quizAttemptRepository.countByQuizRefIdAndStatus(
+                                quiz.getRefId(),
+                                QuizAttemptStatus.IN_PROGRESS
+                        ))
+                .sum();
+
+        if (activeAttemptCount > 0) {
+            throw new QuizException(
+                    StatusCode.E7001,
+                    "Cannot deactivate this category because "
+                            + activeAttemptCount
+                            + " active quiz attempt(s) are still in progress. "
+                            + "Please wait until they are completed."
             );
         }
 
