@@ -1,7 +1,6 @@
 package com.example.quiz_app.dto;
 
 import com.example.quiz_app.model.QuizStatus;
-
 import java.util.List;
 
 public record ParticipantQuizResponse(
@@ -9,6 +8,7 @@ public record ParticipantQuizResponse(
         String categoryRefId,
         String title,
         String description,
+        Integer durationMinutes,
         QuizStatus status,
         List<QuestionResponse> questions
 ) {

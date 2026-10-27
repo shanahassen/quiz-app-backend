@@ -2,5 +2,6 @@ package com.example.quiz_app.model;
 
 public enum QuizAttemptStatus {
     IN_PROGRESS,
+    FINALIZING,
     SUBMITTED
 }

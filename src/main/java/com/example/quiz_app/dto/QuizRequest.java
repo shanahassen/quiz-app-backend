@@ -1,11 +1,13 @@
 package com.example.quiz_app.dto;
 
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
 public record QuizRequest(
         String categoryRefId,
         String title,
         String description,
+        @JsonAlias("duration") Integer durationMinutes,
         List<QuestionRequest> questions
 ) {
     public record QuestionRequest(

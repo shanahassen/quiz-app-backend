@@ -14,7 +14,12 @@ import com.example.quiz_app.repository.QuizRepository;
 import com.example.quiz_app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +34,7 @@ public class QuizAttemptService {
     private final UserRepository userRepository;
     private final CertificateService certificateService;
     private final AuditLogService auditLogService;
+    private final MongoTemplate mongoTemplate;
 
     public QuizAttemptResponse startAttempt(
             String authenticatedEmail,
@@ -65,12 +71,19 @@ public class QuizAttemptService {
         attempt.setAnswers(new ArrayList<>());
         attempt.setTotalQuestions(quiz.getQuestions().size());
         attempt.setScore(null);
-        attempt.setStartedAt(LocalDateTime.now());
+        LocalDateTime startedAt = LocalDateTime.now();
+
+        int durationMinutes = quiz.getDurationMinutes() == null
+                ? 30
+                : quiz.getDurationMinutes();
+
+        attempt.setStartedAt(startedAt);
+        attempt.setDeadlineAt(startedAt.plusMinutes(durationMinutes));
 
         QuizAttempt savedAttempt = attemptRepository.save(attempt);
 
         auditLogService.logAction(
-                participant.getEmail(),
+                authenticatedEmail,
                 "QUIZ_STARTED",
                 "QuizAttempt",
                 savedAttempt.getRefId(),
@@ -101,6 +114,12 @@ public class QuizAttemptService {
 
         ensureInProgress(attempt);
 
+        if (isExpired(attempt)) {
+            finalizeAttempt(attempt);
+            throw new QuizException(StatusCode.E7001,
+                    "The quiz deadline has passed; the attempt was submitted.");
+        }
+
         Quiz quiz = getQuizForAttempt(attempt);
 
         Quiz.Question question = quiz.getQuestions().stream()
@@ -130,8 +149,22 @@ public class QuizAttemptService {
         answer.setCorrect(option.isCorrect());
         answer.setAnsweredAt(LocalDateTime.now());
 
-        attempt.getAnswers().add(answer);
-        QuizAttempt savedAttempt = attemptRepository.save(attempt);
+        Query answerQuery = Query.query(Criteria.where("_id").is(attempt.getId())
+                .and("status").is(QuizAttemptStatus.IN_PROGRESS)
+                .and("deadlineAt").gt(LocalDateTime.now()));
+        var answerUpdate = mongoTemplate.updateFirst(answerQuery,
+                new Update().push("answers", answer), QuizAttempt.class);
+        if (answerUpdate.getModifiedCount() == 0) {
+            if (isExpired(attempt)) {
+                finalizeAttempt(attempt);
+                throw new QuizException(StatusCode.E7001,
+                        "The quiz deadline has passed; the attempt was submitted.");
+            }
+            throw new QuizException(StatusCode.E7001,
+                    "This attempt has already been submitted.");
+        }
+        QuizAttempt savedAttempt = attemptRepository.findByRefId(attemptRefId)
+                .orElseThrow(() -> new QuizException(StatusCode.E4004, "Attempt not found."));
 
         return new AnswerFeedbackResponse(
                 savedAttempt.getRefId(),
@@ -152,8 +185,24 @@ public class QuizAttemptService {
         QuizAttempt attempt = getOwnedAttempt(
                 attemptRefId, participant.getRefId());
 
-        ensureInProgress(attempt);
+        if (attempt.getStatus() == QuizAttemptStatus.IN_PROGRESS && isExpired(attempt)) {
+            return toResponse(finalizeAttempt(attempt));
+        }
 
+        ensureInProgress(attempt);
+        return toResponse(finalizeAttempt(attempt));
+    }
+
+    private QuizAttempt finalizeAttempt(QuizAttempt attempt) throws QuizException {
+        Query claim = Query.query(Criteria.where("_id").is(attempt.getId())
+                .and("status").is(QuizAttemptStatus.IN_PROGRESS));
+        var claimed = mongoTemplate.updateFirst(claim,
+                Update.update("status", QuizAttemptStatus.FINALIZING), QuizAttempt.class);
+        if (claimed.getModifiedCount() == 0) {
+            return attemptRepository.findByRefId(attempt.getRefId()).orElse(attempt);
+        }
+
+        attempt.setStatus(QuizAttemptStatus.FINALIZING);
         Quiz quiz = getQuizForAttempt(attempt);
         int score = 0;
 
@@ -185,6 +234,9 @@ public class QuizAttemptService {
 
         QuizAttempt savedAttempt = attemptRepository.save(attempt);
 
+        User participant = userRepository.findByRefId(attempt.getParticipantRefId())
+                .orElseThrow(() -> new QuizException(StatusCode.E4001, "Active user not found."));
+
         auditLogService.logAction(
                 participant.getEmail(),
                 "QUIZ_SUBMITTED",
@@ -194,10 +246,8 @@ public class QuizAttemptService {
         );
 
         // Generate a certificate for every submitted attempt.
-        certificateService.createForSubmittedAttempt(
-                savedAttempt, quiz, participant);
-
-        return toResponse(attemptRepository.save(attempt));
+        certificateService.createForSubmittedAttempt(savedAttempt, quiz, participant);
+        return savedAttempt;
     }
 
     public QuizAttemptResponse getAttempt(
@@ -209,7 +259,28 @@ public class QuizAttemptService {
         QuizAttempt attempt = getOwnedAttempt(
                 attemptRefId, participant.getRefId());
 
+        if (attempt.getStatus() == QuizAttemptStatus.IN_PROGRESS && isExpired(attempt)) {
+            return toResponse(finalizeAttempt(attempt));
+        }
+
         return toResponse(attempt);
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    public void finalizeExpiredAttempts() {
+        attemptRepository.findByStatusAndDeadlineAtLessThanEqual(
+                        QuizAttemptStatus.IN_PROGRESS, LocalDateTime.now())
+                .forEach(attempt -> {
+                    try {
+                        finalizeAttempt(attempt);
+                    } catch (QuizException exception) {
+                        mongoTemplate.updateFirst(
+                                Query.query(Criteria.where("_id").is(attempt.getId())
+                                        .and("status").is(QuizAttemptStatus.FINALIZING)),
+                                Update.update("status", QuizAttemptStatus.IN_PROGRESS),
+                                QuizAttempt.class);
+                    }
+                });
     }
 
     public List<QuizAttemptHistoryResponse> getAttemptHistory(
@@ -287,6 +358,11 @@ public class QuizAttemptService {
         }
     }
 
+    private boolean isExpired(QuizAttempt attempt) {
+        return attempt.getDeadlineAt() != null
+                && !LocalDateTime.now().isBefore(attempt.getDeadlineAt());
+    }
+
     private QuizAttemptResponse toResponse(QuizAttempt attempt) {
         List<QuizAttempt.Answer> answers = attempt.getAnswers() == null
                 ? List.of()
@@ -301,6 +377,7 @@ public class QuizAttemptService {
                         ? 0 : attempt.getTotalQuestions(),
                 attempt.getScore(),
                 attempt.getStartedAt(),
+                attempt.getDeadlineAt(),
                 attempt.getSubmittedAt()
         );
     }

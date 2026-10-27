@@ -37,4 +37,9 @@ public interface QuizAttemptRepository
             String quizRefId,
             QuizAttemptStatus status
     );
+
+    List<QuizAttempt> findByStatusAndDeadlineAtLessThanEqual(
+            QuizAttemptStatus status,
+            java.time.LocalDateTime deadlineAt
+    );
 }
