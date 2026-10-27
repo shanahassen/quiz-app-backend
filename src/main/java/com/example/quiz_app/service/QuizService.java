@@ -4,7 +4,6 @@ import com.example.quiz_app.common.QuizException;
 import com.example.quiz_app.common.StatusCode;
 import com.example.quiz_app.dto.ParticipantQuizResponse;
 import com.example.quiz_app.dto.QuizRequest;
-import com.example.quiz_app.dto.ParticipantQuizResponse;
 import com.example.quiz_app.model.Category;
 import com.example.quiz_app.model.Quiz;
 import com.example.quiz_app.model.QuizStatus;
@@ -63,6 +62,7 @@ public class QuizService {
                         ? ""
                         : request.description().trim()
         );
+        quiz.setDurationMinutes(request.durationMinutes() == null ? 30 : request.durationMinutes());
         quiz.setStatus(QuizStatus.DRAFT);
 
         List<Quiz.Question> questions = new ArrayList<>();
@@ -151,7 +151,11 @@ public class QuizService {
                         ? ""
                         : request.description().trim()
         );
-
+        if (request.durationMinutes() != null) {
+            quiz.setDurationMinutes(request.durationMinutes());
+        } else if (quiz.getDurationMinutes() == null) {
+            quiz.setDurationMinutes(30);
+        }
         List<Quiz.Question> questions = new ArrayList<>();
 
         for (QuizRequest.QuestionRequest questionRequest : request.questions()) {
@@ -410,6 +414,7 @@ public class QuizService {
                 quiz.getCategoryRefId(),
                 quiz.getTitle(),
                 quiz.getDescription(),
+                quiz.getDurationMinutes() == null ? 30 : quiz.getDurationMinutes(),
                 quiz.getStatus(),
                 questions
         );
@@ -419,6 +424,12 @@ public class QuizService {
         if (request == null) {
             throw new QuizException(StatusCode.E7001,
                     "Quiz request is required.");
+        }
+
+        if (request.durationMinutes() != null
+                && (request.durationMinutes() < 1 || request.durationMinutes() > 180)) {
+            throw new QuizException(StatusCode.E7001,
+                    "Quiz duration must be between 1 and 180 minutes.");
         }
 
         if (request.categoryRefId() == null

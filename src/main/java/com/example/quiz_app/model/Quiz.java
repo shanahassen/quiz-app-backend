@@ -4,7 +4,6 @@ import lombok.Data;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.annotation.Transient;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,12 +13,11 @@ public class Quiz extends BaseEntity {
 
     @Indexed(unique = true)
     private String refId;
-
     private String categoryRefId;
     private String title;
     private String description;
+    private Integer durationMinutes = 30;
     private QuizStatus status = QuizStatus.DRAFT;
-
     private List<Question> questions = new ArrayList<>();
 
     @Data
