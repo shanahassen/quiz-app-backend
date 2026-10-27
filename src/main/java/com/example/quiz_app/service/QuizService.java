@@ -12,6 +12,8 @@ import com.example.quiz_app.repository.CategoryRepository;
 import com.example.quiz_app.repository.QuizAttemptRepository;
 import com.example.quiz_app.repository.QuizRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -208,10 +210,10 @@ public class QuizService {
         return savedQuiz;
     }
 
-    public List<Quiz> getAllQuizzes() {
-        List<Quiz> quizzes = quizRepository.findAll();
+    public Page<Quiz> getAllQuizzes(Pageable pageable) {
+        Page<Quiz> quizzes = quizRepository.findAll(pageable);
 
-        for (Quiz quiz : quizzes) {
+        quizzes.forEach(quiz -> {
             long activeCount =
                     quizAttemptRepository.countByQuizRefIdAndStatus(
                             quiz.getRefId(),
@@ -219,7 +221,7 @@ public class QuizService {
                     );
 
             quiz.setActiveAttemptCount(activeCount);
-        }
+        });
 
         return quizzes;
     }

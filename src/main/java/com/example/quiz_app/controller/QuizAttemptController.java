@@ -7,11 +7,13 @@ import com.example.quiz_app.dto.*;
 import com.example.quiz_app.dto.AnswerSubmissionResponse;
 import com.example.quiz_app.service.QuizAttemptService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/quiz-attempts")
@@ -87,15 +89,16 @@ public class QuizAttemptController {
 
     @GetMapping("/history")
     public ResponseEntity<ApiResponse> getAttemptHistory(
-            Authentication authentication
+            Authentication authentication,
+            @PageableDefault(size = 10) Pageable pageable
     ) throws QuizException {
 
-        List<QuizAttemptHistoryResponse> history =
-                attemptService.getAttemptHistory(authentication.getName());
+        Page<QuizAttemptHistoryResponse> history =
+                attemptService.getAttemptHistory(authentication.getName(), pageable);
 
         ApiResponse response = ApiResponse.forStatus(StatusCode.S0000)
                 .withMessage("Quiz history retrieved successfully.")
-                .withPayload(history);
+                .withPayload(history.getContent(), history.getTotalElements());
 
         return ResponseEntity.ok(response);
     }

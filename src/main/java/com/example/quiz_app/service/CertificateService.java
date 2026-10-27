@@ -13,6 +13,8 @@ import com.example.quiz_app.model.User;
 import com.example.quiz_app.repository.CertificateRepository;
 import com.example.quiz_app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -92,18 +94,17 @@ public class CertificateService {
         return certificateRepository.save(certificate);
     }
 
-    public List<CertificateResponse> getMyCertificates(
-            String authenticatedEmail
+    public Page<CertificateResponse> getMyCertificates(
+            String authenticatedEmail,
+            Pageable pageable
     ) throws QuizException {
 
         User participant = getActiveParticipant(authenticatedEmail);
 
         return certificateRepository
                 .findByParticipantRefIdOrderByIssuedAtDesc(
-                        participant.getRefId())
-                .stream()
-                .map(this::toResponse)
-                .toList();
+                        participant.getRefId(), pageable)
+                .map(this::toResponse);
     }
 
     public byte[] downloadCertificate(

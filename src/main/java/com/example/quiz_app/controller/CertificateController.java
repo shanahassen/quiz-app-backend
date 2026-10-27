@@ -5,13 +5,15 @@ import com.example.quiz_app.common.StatusCode;
 import com.example.quiz_app.dto.CertificateResponse;
 import com.example.quiz_app.service.CertificateService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/certificates")
@@ -22,15 +24,16 @@ public class CertificateController {
 
     @GetMapping
     public ResponseEntity<ApiResponse> getMyCertificates(
-            Authentication authentication) throws Exception {
+            Authentication authentication,
+            @PageableDefault(size = 10) Pageable pageable) throws Exception {
 
-        List<CertificateResponse> certificates =
+        Page<CertificateResponse> certificates =
                 certificateService.getMyCertificates(
-                        authentication.getName());
+                        authentication.getName(), pageable);
 
         ApiResponse response = ApiResponse.forStatus(StatusCode.S0000)
                 .withMessage("Certificates retrieved successfully.")
-                .withPayload(certificates);
+                .withPayload(certificates.getContent(), certificates.getTotalElements());
 
         return ResponseEntity.ok(response);
     }

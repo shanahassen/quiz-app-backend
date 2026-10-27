@@ -5,6 +5,9 @@ import com.example.quiz_app.dto.SystemReportResponse;
 import com.example.quiz_app.service.AuditLogService;
 import com.example.quiz_app.service.SystemReportService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -45,13 +48,15 @@ public class SystemReportsController {
     }
 
     @GetMapping("/system-reports")
-    public ResponseEntity<Map<String, Object>> getReports() {
-        List<SystemReportResponse> reports =
-                systemReportService.getAllReports();
+    public ResponseEntity<Map<String, Object>> getReports(
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<SystemReportResponse> reports =
+                systemReportService.getAllReports(pageable);
 
         return ResponseEntity.ok(Map.of(
                 "message", "System reports retrieved successfully.",
-                "payload", reports
+                "payload", reports.getContent(),
+                "totalElements", reports.getTotalElements()
         ));
     }
 
@@ -101,12 +106,14 @@ public class SystemReportsController {
     }
 
     @GetMapping("/audit-logs")
-    public ResponseEntity<Map<String, Object>> getAuditLogs() {
-        List<AuditLog> logs = auditLogService.getAllLogs();
+    public ResponseEntity<Map<String, Object>> getAuditLogs(
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<AuditLog> logs = auditLogService.getAllLogs(pageable);
 
         return ResponseEntity.ok(Map.of(
                 "message", "Audit logs retrieved successfully.",
-                "payload", logs
+                "payload", logs.getContent(),
+                "totalElements", logs.getTotalElements()
         ));
     }
 
