@@ -7,9 +7,11 @@ import com.example.quiz_app.common.QuizException;
 import com.example.quiz_app.common.StatusCode;
 import com.example.quiz_app.service.CategoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -35,16 +37,17 @@ public class CategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse> getAllCategories() {
+    public ResponseEntity<ApiResponse> getAllCategories(
+            @PageableDefault(size = 10) Pageable pageable) {
 
-        List<CategoryResponse> categories =
-                categoryService.getAllCategories();
+        Page<CategoryResponse> categories =
+                categoryService.getAllCategories(pageable);
 
         return ResponseEntity.ok(
                 ApiResponse
                         .forStatus(StatusCode.S0000)
                         .withMessage("Categories retrieved successfully")
-                        .withPayload(categories, categories.size())
+                        .withPayload(categories.getContent(), categories.getTotalElements())
         );
     }
 

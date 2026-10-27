@@ -16,6 +16,9 @@ import lombok.RequiredArgsConstructor;
 import com.example.quiz_app.model.Category;
 import com.example.quiz_app.model.Status;
 import com.example.quiz_app.repository.CategoryRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -295,17 +298,21 @@ public class QuizAttemptService {
                 });
     }
 
-    public List<QuizAttemptHistoryResponse> getAttemptHistory(
-            String authenticatedEmail
+    public Page<QuizAttemptHistoryResponse> getAttemptHistory(
+            String authenticatedEmail,
+            Pageable pageable
     ) throws QuizException {
 
         User participant = getActiveParticipant(authenticatedEmail);
 
         return attemptRepository.findByParticipantRefId(
                         participant.getRefId(),
-                        Sort.by(Sort.Direction.DESC, "startedAt")
+                        PageRequest.of(
+                                pageable.getPageNumber(),
+                                pageable.getPageSize(),
+                                Sort.by(Sort.Direction.DESC, "startedAt")
+                        )
                 )
-                .stream()
                 .map(attempt -> {
                     String quizTitle = quizRepository
                             .findByRefId(attempt.getQuizRefId())
@@ -328,8 +335,7 @@ public class QuizAttemptService {
                             attempt.getStartedAt(),
                             attempt.getSubmittedAt()
                     );
-                })
-                .toList();
+                });
     }
 
     private User getActiveParticipant(String email) throws QuizException {

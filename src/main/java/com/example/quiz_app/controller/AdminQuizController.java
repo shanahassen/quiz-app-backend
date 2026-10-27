@@ -6,11 +6,14 @@ import com.example.quiz_app.common.StatusCode;
 import com.example.quiz_app.dto.QuizRequest;
 import com.example.quiz_app.model.Quiz;
 import com.example.quiz_app.service.QuizService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/quizzes")
@@ -33,13 +36,18 @@ public class AdminQuizController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse> getAllQuizzes() {
-        List<Quiz> quizzes = quizService.getAllQuizzes();
+    public ResponseEntity<ApiResponse> getAllQuizzes(
+            @PageableDefault(
+                    size = 10,
+                    sort = "createdAt",
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable) {
+        Page<Quiz> quizzes = quizService.getAllQuizzes(pageable);
 
         return ResponseEntity.ok(
                 ApiResponse.forStatus(StatusCode.S0000)
                         .withMessage("Quizzes retrieved successfully")
-                        .withPayload(quizzes, quizzes.size())
+                        .withPayload(quizzes.getContent(), quizzes.getTotalElements())
         );
     }
 

@@ -4,6 +4,8 @@ import com.example.quiz_app.dto.SystemReportResponse;
 import com.example.quiz_app.model.SystemReport;
 import com.example.quiz_app.repository.SystemReportRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
@@ -58,11 +60,9 @@ public class SystemReportService {
                 .sum();
     }
 
-    public List<SystemReportResponse> getAllReports() {
-        return reportRepository.findAllByOrderByGeneratedAtDesc()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<SystemReportResponse> getAllReports(Pageable pageable) {
+        return reportRepository.findAllByOrderByGeneratedAtDesc(pageable)
+                .map(this::toResponse);
     }
 
     public SystemReportResponse getReport(String refId) {
