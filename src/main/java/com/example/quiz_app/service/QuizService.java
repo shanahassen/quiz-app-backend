@@ -330,6 +330,9 @@ public class QuizService {
     public List<ParticipantQuizResponse> getPublishedQuizzes() {
         return quizRepository.findByStatus(QuizStatus.PUBLISHED)
                 .stream()
+                .filter(quiz -> categoryRepository.findByRefId(quiz.getCategoryRefId())
+                        .map(category -> category.getStatus() == Status.ACTIVE)
+                        .orElse(false))
                 .map(this::toParticipantResponse)
                 .toList();
     }
@@ -342,6 +345,18 @@ public class QuizService {
         if (quiz.getStatus() != QuizStatus.PUBLISHED) {
             throw new QuizException(StatusCode.E4004,
                     "Published quiz not found.");
+        }
+
+        boolean categoryIsActive = categoryRepository
+                .findByRefId(quiz.getCategoryRefId())
+                .map(category -> category.getStatus() == Status.ACTIVE)
+                .orElse(false);
+
+        if (!categoryIsActive) {
+            throw new QuizException(
+                    StatusCode.E4004,
+                    "Published quiz not found."
+            );
         }
 
         return toParticipantResponse(quiz);

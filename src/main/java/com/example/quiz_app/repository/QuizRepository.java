@@ -33,4 +33,9 @@ public interface QuizRepository extends MongoRepository<Quiz, String> {
             QuizStatus status,
             String refId
     );
+
+    List<Quiz> findByCategoryRefIdAndStatusNot(
+            String categoryRefId,
+            QuizStatus status
+    );
 }

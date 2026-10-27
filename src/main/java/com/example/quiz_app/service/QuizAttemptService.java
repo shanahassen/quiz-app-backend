@@ -13,6 +13,9 @@ import com.example.quiz_app.repository.QuizAttemptRepository;
 import com.example.quiz_app.repository.QuizRepository;
 import com.example.quiz_app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import com.example.quiz_app.model.Category;
+import com.example.quiz_app.model.Status;
+import com.example.quiz_app.repository.CategoryRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -28,6 +31,7 @@ public class QuizAttemptService {
     private final QuizRepository quizRepository;
     private final UserRepository userRepository;
     private final CertificateService certificateService;
+    private final CategoryRepository categoryRepository;
     private final AuditLogService auditLogService;
 
     public QuizAttemptResponse startAttempt(
@@ -51,6 +55,14 @@ public class QuizAttemptService {
             throw new QuizException(StatusCode.E4004,
                     "Published quiz not found.");
         }
+
+        Category category = categoryRepository
+                .findByRefId(quiz.getCategoryRefId())
+                .filter(item -> item.getStatus() == Status.ACTIVE)
+                .orElseThrow(() -> new QuizException(
+                        StatusCode.E4004,
+                        "This quiz is unavailable because its category is inactive."
+                ));
 
         if (quiz.getQuestions() == null || quiz.getQuestions().isEmpty()) {
             throw new QuizException(StatusCode.E7001,
