@@ -23,6 +23,12 @@ public class QuizAttempt extends BaseEntity {
     private LocalDateTime deadlineAt;
     private LocalDateTime submittedAt;
 
+    /**
+     * Archives this individual attempt for the admin.
+     * This does not archive the quiz or remove participant history.
+     */
+    private boolean archived = false;
+
     @Data
     public static class Answer {
 
