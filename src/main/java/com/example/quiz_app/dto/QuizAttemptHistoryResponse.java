@@ -1,6 +1,7 @@
 package com.example.quiz_app.dto;
 
 import com.example.quiz_app.model.QuizAttemptStatus;
+
 import java.time.LocalDateTime;
 
 public record QuizAttemptHistoryResponse(
@@ -12,5 +13,7 @@ public record QuizAttemptHistoryResponse(
         int totalQuestions,
         Integer score,
         LocalDateTime startedAt,
-        LocalDateTime submittedAt
-) {}
+        LocalDateTime submittedAt,
+        boolean archived
+) {
+}
