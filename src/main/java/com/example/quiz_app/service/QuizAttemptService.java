@@ -1,41 +1,31 @@
-
 package com.example.quiz_app.service;
 
 import com.example.quiz_app.common.QuizException;
 import com.example.quiz_app.common.StatusCode;
 import com.example.quiz_app.dto.*;
-import com.example.quiz_app.model.Category;
 import com.example.quiz_app.model.Quiz;
 import com.example.quiz_app.model.QuizAttempt;
 import com.example.quiz_app.model.QuizAttemptStatus;
 import com.example.quiz_app.model.QuizStatus;
 import com.example.quiz_app.model.Status;
 import com.example.quiz_app.model.User;
-import com.example.quiz_app.repository.CategoryRepository;
 import com.example.quiz_app.repository.QuizAttemptRepository;
 import com.example.quiz_app.repository.QuizRepository;
 import com.example.quiz_app.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-<<<<<<< Updated upstream
 import com.example.quiz_app.model.Category;
 import com.example.quiz_app.model.Status;
 import com.example.quiz_app.repository.CategoryRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-=======
->>>>>>> Stashed changes
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
-<<<<<<< Updated upstream
 import org.springframework.scheduling.annotation.Scheduled;
-=======
-
->>>>>>> Stashed changes
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,7 +65,8 @@ public class QuizAttemptService {
                     "Published quiz not found.");
         }
 
-        categoryRepository.findByRefId(quiz.getCategoryRefId())
+        Category category = categoryRepository
+                .findByRefId(quiz.getCategoryRefId())
                 .filter(item -> item.getStatus() == Status.ACTIVE)
                 .orElseThrow(() -> new QuizException(
                         StatusCode.E4004,
@@ -269,49 +260,9 @@ public class QuizAttemptService {
                 "Submitted quiz: " + quiz.getTitle()
         );
 
-<<<<<<< Updated upstream
         // Generate a certificate for every submitted attempt.
         certificateService.createForSubmittedAttempt(savedAttempt, quiz, participant);
         return savedAttempt;
-=======
-        certificateService.createForSubmittedAttempt(
-                savedAttempt, quiz, participant);
-
-        return toResponse(savedAttempt);
-    }
-
-    public QuizAttemptResponse exitAttempt(
-            String authenticatedEmail,
-            String attemptRefId
-    ) throws QuizException {
-
-        User participant = getActiveParticipant(authenticatedEmail);
-
-        QuizAttempt attempt = getOwnedAttempt(
-                attemptRefId, participant.getRefId());
-
-        if (attempt.getStatus() == QuizAttemptStatus.INCOMPLETE) {
-            return toResponse(attempt);
-        }
-
-        ensureInProgress(attempt);
-
-        attempt.setStatus(QuizAttemptStatus.INCOMPLETE);
-
-        // An exited attempt is not submitted, scored, or certified.
-        QuizAttempt savedAttempt = attemptRepository.save(attempt);
-
-        auditLogService.logAction(
-                participant.getEmail(),
-                "QUIZ_EXITED",
-                "QuizAttempt",
-                savedAttempt.getRefId(),
-                "Exited quiz attempt without submitting: "
-                        + savedAttempt.getQuizRefId()
-        );
-
-        return toResponse(savedAttempt);
->>>>>>> Stashed changes
     }
 
     public QuizAttemptResponse getAttempt(
@@ -379,8 +330,7 @@ public class QuizAttemptService {
                             attempt.getStatus(),
                             answeredQuestions,
                             attempt.getTotalQuestions() == null
-                                    ? 0
-                                    : attempt.getTotalQuestions(),
+                                    ? 0 : attempt.getTotalQuestions(),
                             attempt.getScore(),
                             attempt.getStartedAt(),
                             attempt.getSubmittedAt(),

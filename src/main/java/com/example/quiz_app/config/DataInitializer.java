@@ -45,8 +45,6 @@ public class DataInitializer implements CommandLineRunner {
         createPermission("MANAGE_ROLE", "Manage roles and permissions");
         createPermission("MANAGE_CATEGORY", "Manage categories");
         createPermission("MANAGE_QUIZ", "Manage quizzes");
-        createPermission("MANAGE_QUESTION", "Manage questions");
-        createPermission("MANAGE_ANSWER_OPTION", "Manage answer options");
         createPermission("MANAGE_REPORT", "Manage system reports");
         createPermission("VIEW_AUDIT_LOG", "View audit logs");
         createPermission("TAKE_QUIZ", "Take quizzes");
@@ -115,8 +113,6 @@ public class DataInitializer implements CommandLineRunner {
                     "MANAGE_ROLE",
                     "MANAGE_CATEGORY",
                     "MANAGE_QUIZ",
-                    "MANAGE_QUESTION",
-                    "MANAGE_ANSWER_OPTION",
                     "MANAGE_REPORT",
                     "VIEW_AUDIT_LOG"
             );
@@ -124,9 +120,7 @@ public class DataInitializer implements CommandLineRunner {
 
             permissionNames = Arrays.asList(
                     "MANAGE_CATEGORY",
-                    "MANAGE_QUIZ",
-                    "MANAGE_QUESTION",
-                    "MANAGE_ANSWER_OPTION"
+                    "MANAGE_QUIZ"
             );
         } else {
 

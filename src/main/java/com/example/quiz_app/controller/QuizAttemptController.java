@@ -3,11 +3,8 @@ package com.example.quiz_app.controller;
 import com.example.quiz_app.common.ApiResponse;
 import com.example.quiz_app.common.QuizException;
 import com.example.quiz_app.common.StatusCode;
-import com.example.quiz_app.dto.AnswerFeedbackResponse;
-import com.example.quiz_app.dto.QuizAttemptHistoryResponse;
-import com.example.quiz_app.dto.QuizAttemptResponse;
-import com.example.quiz_app.dto.StartQuizAttemptRequest;
-import com.example.quiz_app.dto.SubmitAnswerRequest;
+import com.example.quiz_app.dto.*;
+import com.example.quiz_app.dto.AnswerSubmissionResponse;
 import com.example.quiz_app.service.QuizAttemptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,11 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-<<<<<<< Updated upstream
-=======
-
-import java.util.List;
->>>>>>> Stashed changes
 
 @RestController
 @RequestMapping("/api/quiz-attempts")
@@ -37,9 +29,7 @@ public class QuizAttemptController {
     ) throws QuizException {
 
         QuizAttemptResponse attempt = attemptService.startAttempt(
-                authentication.getName(),
-                request
-        );
+                authentication.getName(), request);
 
         ApiResponse response = ApiResponse.forStatus(StatusCode.S0000)
                 .withMessage("Quiz attempt started successfully.")
@@ -56,10 +46,7 @@ public class QuizAttemptController {
     ) throws QuizException {
 
         AnswerFeedbackResponse feedback = attemptService.submitAnswer(
-                authentication.getName(),
-                attemptRefId,
-                request
-        );
+                authentication.getName(), attemptRefId, request);
 
         ApiResponse response = ApiResponse.forStatus(StatusCode.S0000)
                 .withMessage("Answer submitted successfully.")
@@ -75,34 +62,10 @@ public class QuizAttemptController {
     ) throws QuizException {
 
         QuizAttemptResponse result = attemptService.submitAttempt(
-                authentication.getName(),
-                attemptRefId
-        );
+                authentication.getName(), attemptRefId);
 
         ApiResponse response = ApiResponse.forStatus(StatusCode.S0000)
                 .withMessage("Quiz submitted successfully.")
-                .withPayload(result);
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Marks the current participant's attempt as INCOMPLETE.
-     * This does not submit, score, or generate a certificate.
-     */
-    @PostMapping("/{attemptRefId}/exit")
-    public ResponseEntity<ApiResponse> exitAttempt(
-            @PathVariable String attemptRefId,
-            Authentication authentication
-    ) throws QuizException {
-
-        QuizAttemptResponse result = attemptService.exitAttempt(
-                authentication.getName(),
-                attemptRefId
-        );
-
-        ApiResponse response = ApiResponse.forStatus(StatusCode.S0000)
-                .withMessage("Quiz attempt exited and saved as incomplete.")
                 .withPayload(result);
 
         return ResponseEntity.ok(response);
@@ -115,9 +78,7 @@ public class QuizAttemptController {
     ) throws QuizException {
 
         QuizAttemptResponse attempt = attemptService.getAttempt(
-                authentication.getName(),
-                attemptRefId
-        );
+                authentication.getName(), attemptRefId);
 
         ApiResponse response = ApiResponse.forStatus(StatusCode.S0000)
                 .withMessage("Quiz attempt retrieved successfully.")
@@ -132,15 +93,8 @@ public class QuizAttemptController {
             @PageableDefault(size = 10) Pageable pageable
     ) throws QuizException {
 
-<<<<<<< Updated upstream
         Page<QuizAttemptHistoryResponse> history =
                 attemptService.getAttemptHistory(authentication.getName(), pageable);
-=======
-        List<QuizAttemptHistoryResponse> history =
-                attemptService.getAttemptHistory(
-                        authentication.getName()
-                );
->>>>>>> Stashed changes
 
         ApiResponse response = ApiResponse.forStatus(StatusCode.S0000)
                 .withMessage("Quiz history retrieved successfully.")
