@@ -19,7 +19,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
 import java.util.List;
 
 @Configuration
@@ -53,40 +52,88 @@ public class SecurityConfig {
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // Public endpoints
                         .requestMatchers(
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/error"
                         ).permitAll()
 
-                        // Super Admin
-                        .requestMatchers("/api/admin/users/**").hasAuthority("MANAGE_USER")
-                        .requestMatchers("/api/admin/roles/**").hasAuthority("MANAGE_ROLE")
-                        .requestMatchers("/api/dashboard/**").hasAnyRole("SUPER_ADMIN","ADMIN")
+                        // User and role management
+                        .requestMatchers("/api/admin/users/**")
+                        .hasAuthority("MANAGE_USER")
 
-                        // Quiz management
-                        // Authenticated users may read categories
+                        .requestMatchers("/api/admin/roles/**")
+                        .hasAuthority("MANAGE_ROLE")
+
+                        // Dashboard access
+                        .requestMatchers("/api/dashboard/**")
+                        .hasAnyRole("SUPER_ADMIN", "ADMIN")
+
+                        // Category viewing: authenticated users may view categories
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/categories",
                                 "/api/categories/**"
                         ).authenticated()
 
-                        // Only category managers may create, update, or deactivate categories
-                        .requestMatchers("/api/categories/**").hasAuthority("MANAGE_CATEGORY")
-                        .requestMatchers("/api/participant/quizzes/**").hasAuthority("TAKE_QUIZ")
-                        .requestMatchers("/api/quizzes/**").hasAuthority("MANAGE_QUIZ")
-                        .requestMatchers("/api/questions/**").hasAuthority("MANAGE_QUESTION")
-                        .requestMatchers("/api/answer-options/**").hasAuthority("MANAGE_ANSWER_OPTION")
+                        // Category management
+                        .requestMatchers("/api/categories/**")
+                        .hasAuthority("MANAGE_CATEGORY")
 
-                        // Participant
-                        .requestMatchers("/api/quiz-attempts/**").hasAuthority("TAKE_QUIZ")
-                        .requestMatchers("/api/profile/**").hasAuthority("MANAGE_PROFILE")
+                        // Participant quiz access
+                        .requestMatchers("/api/participant/quizzes/**")
+                        .hasAuthority("TAKE_QUIZ")
 
-                        .requestMatchers("/api/test/quiz-management").hasAuthority("MANAGE_QUIZ")
-                        .requestMatchers("/api/test/profile").hasAuthority("MANAGE_PROFILE")
+                        // Quiz viewing: does not require MANAGE_QUIZ
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/quizzes",
+                                "/api/quizzes/**"
+                        ).authenticated()
 
-                        // Everything else requires login
+                        // Quiz creation, editing, publishing, and archiving
+                        .requestMatchers("/api/quizzes/**")
+                        .hasAuthority("MANAGE_QUIZ")
+
+                        // Question viewing: does not require MANAGE_QUIZ
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/questions",
+                                "/api/questions/**"
+                        ).authenticated()
+
+                        // Question creation, editing, and deletion
+                        .requestMatchers("/api/questions/**")
+                        .hasAuthority("MANAGE_QUIZ")
+
+                        // Answer-option viewing: does not require MANAGE_QUIZ
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/answer-options",
+                                "/api/answer-options/**"
+                        ).authenticated()
+
+                        // Answer-option creation, editing, and deletion
+                        .requestMatchers("/api/answer-options/**")
+                        .hasAuthority("MANAGE_QUIZ")
+
+                        // Quiz attempts
+                        .requestMatchers("/api/quiz-attempts/**")
+                        .hasAuthority("TAKE_QUIZ")
+
+                        // Participant profile
+                        .requestMatchers("/api/profile/**")
+                        .hasAuthority("MANAGE_PROFILE")
+
+                        // Test endpoints
+                        .requestMatchers("/api/test/quiz-management")
+                        .hasAuthority("MANAGE_QUIZ")
+
+                        .requestMatchers("/api/test/profile")
+                        .hasAuthority("MANAGE_PROFILE")
+
+                        // Everything else requires authentication
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
@@ -101,7 +148,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:4200"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(
+                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+        );
         config.setAllowedHeaders(List.of("*"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -114,7 +163,8 @@ public class SecurityConfig {
             UserDetailsService userDetailsService,
             PasswordEncoder passwordEncoder) {
 
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        DaoAuthenticationProvider provider =
+                new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         return provider;
     }

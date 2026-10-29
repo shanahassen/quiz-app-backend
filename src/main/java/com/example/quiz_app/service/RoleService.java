@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +26,11 @@ public class RoleService {
     public List<Role> getAllRoles() {
         return roleRepository.findAll();
     }
+
+    private static final Set<String> ADMIN_ALLOWED_PERMISSIONS = Set.of(
+            "MANAGE_CATEGORY",
+            "MANAGE_QUIZ"
+    );
 
     public Role getRoleByRefId(String refId) throws QuizException {
         return roleRepository.findByRefId(refId)
@@ -60,28 +66,34 @@ public class RoleService {
         if (role.getStatus() == Status.INACTIVE) {
             throw new QuizException(
                     StatusCode.E4005,
-                    "Permissions cannot be changed for an inactive role");
+                    "Permissions cannot be changed for an inactive role"
+            );
         }
 
-        if (role.getRoleName() ==
-                com.example.quiz_app.model.RoleName.SUPER_ADMIN) {
+        // Only the Admin role can be configured through this endpoint.
+        // Super Admin is protected, and Participant is not configurable here.
+        if (role.getRoleName() !=
+                com.example.quiz_app.model.RoleName.ADMIN) {
             throw new QuizException(
                     StatusCode.E4005,
-                    "The Super Admin permissions cannot be modified here");
+                    "Permissions can only be configured for the Admin role"
+            );
+        }
+
+        if (request == null || request.permissionRefIds() == null) {
+            throw new QuizException(
+                    StatusCode.E4000,
+                    "Permission reference IDs are required"
+            );
         }
 
         List<String> requestedIds = request.permissionRefIds();
 
-        if (requestedIds == null) {
-            throw new QuizException(
-                    StatusCode.E4000,
-                    "Permission reference IDs are required");
-        }
-
         if (new HashSet<>(requestedIds).size() != requestedIds.size()) {
             throw new QuizException(
                     StatusCode.E4000,
-                    "Duplicate permission IDs are not allowed");
+                    "Duplicate permission IDs are not allowed"
+            );
         }
 
         List<String> validatedIds = new ArrayList<>();
@@ -91,12 +103,24 @@ public class RoleService {
                     .findByRefId(permissionRefId)
                     .orElseThrow(() -> new QuizException(
                             StatusCode.E4004,
-                            "Permission not found: " + permissionRefId));
+                            "Permission not found: " + permissionRefId
+                    ));
 
             if (permission.getStatus() != Status.ACTIVE) {
                 throw new QuizException(
                         StatusCode.E4005,
-                        "Inactive permissions cannot be assigned");
+                        "Inactive permissions cannot be assigned"
+                );
+            }
+
+            // Enforce the allowlist on the backend, regardless of
+            // which permission IDs the client sends.
+            if (!ADMIN_ALLOWED_PERMISSIONS.contains(permission.getName())) {
+                throw new QuizException(
+                        StatusCode.E4005,
+                        "This permission cannot be assigned to Admin: "
+                                + permission.getName()
+                );
             }
 
             validatedIds.add(permission.getRefId());
