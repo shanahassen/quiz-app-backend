@@ -38,7 +38,7 @@ public class QuizAttemptController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PostMapping("/{attemptRefId}/answers")
+    @PatchMapping("/{attemptRefId}/answers")
     public ResponseEntity<ApiResponse> submitAnswer(
             @PathVariable String attemptRefId,
             @RequestBody(required = false) SubmitAnswerRequest request,
@@ -55,7 +55,7 @@ public class QuizAttemptController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{attemptRefId}/submit")
+    @PatchMapping("/{attemptRefId}/submit")
     public ResponseEntity<ApiResponse> submitAttempt(
             @PathVariable String attemptRefId,
             Authentication authentication
