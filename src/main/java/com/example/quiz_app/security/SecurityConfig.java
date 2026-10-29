@@ -37,18 +37,20 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
-
                 .cors(Customizer.withDefaults())
-
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
                 )
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint((request, response, authException) ->
-                                response.setStatus(401)
+                        .authenticationEntryPoint(
+                                (request, response, authException) ->
+                                        response.setStatus(401)
                         )
-                        .accessDeniedHandler((request, response, accessDeniedException) ->
-                                response.setStatus(403)
+                        .accessDeniedHandler(
+                                (request, response, accessDeniedException) ->
+                                        response.setStatus(403)
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
@@ -153,8 +155,11 @@ public class SecurityConfig {
         );
         config.setAllowedHeaders(List.of("*"));
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
 
@@ -166,6 +171,7 @@ public class SecurityConfig {
         DaoAuthenticationProvider provider =
                 new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
+
         return provider;
     }
 

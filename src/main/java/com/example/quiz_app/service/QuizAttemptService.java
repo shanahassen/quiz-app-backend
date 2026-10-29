@@ -333,7 +333,8 @@ public class QuizAttemptService {
                                     ? 0 : attempt.getTotalQuestions(),
                             attempt.getScore(),
                             attempt.getStartedAt(),
-                            attempt.getSubmittedAt()
+                            attempt.getSubmittedAt(),
+                            attempt.isArchived()
                     );
                 });
     }
